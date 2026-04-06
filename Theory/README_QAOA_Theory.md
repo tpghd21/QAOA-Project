@@ -30,6 +30,9 @@ The total cut value is $C(z) = \sum_{(i,j) \in E} \mathbf{1}[z_i \neq z_j]$. Max
 
 The running example throughout is the 4-cycle $C_4$, which has optimal cut value 4 (all edges crossing), achieved by any 2-coloring of the cycle.
 
+![C4 MaxCut](figures/c4_maxcut.png)
+*$C_4$ with its optimal 2-coloring (left) and the corresponding bitstring-to-cut-value mapping (right). Red nodes $\{0,2\}$ and blue nodes $\{1,3\}$ form the two partition sides; all 4 edges cross the cut.*
+
 ### 2. Classical Ising Encoding
 
 The **Ising model** on $G$ assigns spin variables $s_i \in \{-1, +1\}$ to each vertex. Under the substitution $s_i = 1 - 2z_i$ (so $z_i = 0 \Rightarrow s_i = +1$, $z_i = 1 \Rightarrow s_i = -1$), an edge $(i,j)$ is cut if and only if $s_is_j = -1$:
@@ -106,6 +109,9 @@ This SDP is polynomial-time solvable. After extracting the solution vectors, a r
 $$\mathbb{E}[C_{\text{GW}}] \geq \alpha_{\text{GW}} \cdot \text{MaxCut}(G), \quad \alpha_{\text{GW}} \approx 0.8786$$
 
 This guarantee is tight: assuming the Unique Games Conjecture, no polynomial-time algorithm achieves a ratio greater than $\alpha_{\text{GW}}$ (Khot et al. 2007).
+
+![GW rounding guarantee](figures/gw_rounding.png)
+*Left: the GW rounding ratio $\frac{\theta_{ij}/\pi}{(1-\cos\theta_{ij})/2}$ as a function of angle $\theta_{ij}$, with minimum $\approx 0.8786$ at $133.6°$ — this is the worst-case angle and the source of the approximation constant. Right: GW on $C_{10}+3$ chords over 2000 random hyperplane roundings; all trials recover the optimal cut value 13.*
 
 ### 2. Why GW Is Hard for QAOA to Beat
 

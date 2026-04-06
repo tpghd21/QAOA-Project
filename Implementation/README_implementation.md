@@ -1,4 +1,4 @@
-# QAOA — Preparation Notebooks
+# QAOA — Implementation Notebooks
 
 
 This folder contains two notebooks that sit between the theory foundations (Parts I–II) and the full experimental comparisons (Parts IV–V). Together they answer a single question in two stages: **does the circuit do what the theory says it does, and given that it does, how should its parameters be optimised?**
@@ -52,6 +52,9 @@ This is phase separation; it does not change any probability $|\langle z|\psi\ra
 
 **Step 2** — Mixer unitary: $U_B(\beta) = \bigotimes_{k=0}^{3} R_X(2\beta)_k$ rotates each qubit's Bloch sphere, coupling amplitudes across Hamming-1 neighbours. The redistribution of probability mass toward high-cut bitstrings results from the interference between Steps 1 and 2.
 
+![Statevector evolution at p=1](figures/statevector_tracking.png)
+*Amplitude magnitudes at each step for $C_4$, $\gamma^*=\pi/4$, $\beta^*=\pi/8$. Step 0: uniform superposition — all 16 bitstrings equal. Step 1: $U_C$ imprints phases; probabilities are unchanged. Step 2: $U_B$ couples amplitudes via interference; the two max-cut bitstrings $|0101\rangle$ and $|1010\rangle$ dominate.*
+
 ### 4. Optimal Parameters at $p = 1$
 
 For $C_4$ the $p=1$ landscape $F_1(\gamma,\beta)$ can be computed analytically. The numerical optimum is at $\gamma^* = \pi/4$, $\beta^* = \pi/8$.
@@ -59,6 +62,9 @@ For $C_4$ the $p=1$ landscape $F_1(\gamma,\beta)$ can be computed analytically. 
 The intuition for $\gamma^* = \pi/4$: max-cut states ($C = 4$) acquire phase $e^{-i\pi} = -1$ while zero-cut states ($C = 0$) stay at $+1$. This maximises the phase contrast between the two extremes before the mixer acts. The intuition for $\beta^* = \pi/8$: the mixer angle $R_X(\pi/4)$ is the sweet spot between under-rotation (no amplitude transfer) and over-rotation (mixing away from the desired basin).
 
 At these parameters the two max-cut bitstrings together receive the majority of the total probability.
+
+![C4 p=1 landscape and optimal distribution](figures/landscape_and_distribution.png)
+*Left: $F_1(\gamma,\beta)$ landscape for $C_4$ — global maximum at $\gamma^*=\pi/4$, $\beta^*=\pi/8$ (marked $\star$). Right: measurement probability distribution at the optimal parameters; $|0101\rangle$ and $|1010\rangle$ (red) together account for the majority of the total probability.*
 
 ### 5. Scaling to $p = 2, 3$
 
@@ -96,7 +102,7 @@ A **barren plateau** is a parameter region where the gradient is exponentially s
 
 $$\mathbb{E}_{\boldsymbol{\theta}}\!\left[\frac{\partial F_p}{\partial \theta_k}\right] = 0, \qquad \mathrm{Var}\!\left[\frac{\partial F_p}{\partial \theta_k}\right] \leq \frac{C}{b^n}, \quad b \geq 2$$
 
-The notebook demonstrates this numerically: gradient variance (normalised by $|E|$ to remove trivial graph-size scaling) is measured at 300 random initialisations for $n \in \{4, 6, 8, 10, 12\}$ at $p=1$. The variance decreases with $n$, consistent with the theoretical bound.
+The notebook measures gradient variance (normalised by $|E|$ to remove trivial graph-size scaling) at 300 random initialisations for $n \in \{4, 6, 8, 10, 12\}$ at $p=1$. The system sizes tested are too small to observe clear asymptotic decay; the empirical variance does not show a clean monotone trend over this range, which is consistent with the theoretical bound only being tight in the large-$n$ limit.
 
 Gradient-free optimisers are not immune. In flat regions, COBYLA's linear model becomes degenerate when function values at simplex vertices differ by less than floating-point resolution; Nelder-Mead's simplex collapses when all vertices have similar values; SPSA's step sizes must be calibrated to the gradient scale or the signal is buried in perturbation noise.
 
@@ -137,6 +143,9 @@ All four optimisers are benchmarked on the 10-cycle $C_{10}$ at $p=2$ with 30 ra
 
 The comparison illustrates that on a moderately sized, noiseless statevector simulation, COBYLA and L-BFGS-B are competitive in solution quality while SPSA shows higher variance due to stochastic perturbations. The critical difference between $C_4$ and $C_{10}$ is visible in convergence curves: $C_4$ converges reliably from any random initialisation, while $C_{10}$ already shows meaningful spread, motivating the warm-start strategy below.
 
+![Optimizer comparison on C10](figures/optimizer_comparison.png)
+*Left: approximation ratio distribution across 30 random initialisations per optimizer on $C_{10}$, $p=2$ (box plot). Dashed lines: GW bound (0.8786) and exact optimum (1.0). COBYLA and L-BFGS-B achieve comparable median quality; SPSA shows higher spread. Right: convergence trajectories per optimizer.*
+
 ### 6. Warm-Start: Layer-by-Layer Initialisation
 
 The layer-by-layer strategy (Zhou et al. 2020) reduces sensitivity to random initialisation:
@@ -146,6 +155,9 @@ The layer-by-layer strategy (Zhou et al. 2020) reduces sensitivity to random ini
 3. Optimise $p=2$. Repeat inductively for $p=3, 4, \ldots$
 
 The mechanism: the $p=2$ landscape restricted to the subspace $\gamma_1 = \gamma_2$, $\beta_1 = \beta_2$ is exactly the $p=1$ landscape, so the $p=1$ optimum is a feasible starting point with non-negligible gradients. This is demonstrated on $C_{10}$ augmented with 3 chords ($|E| = 13$, $C_{\max} = 13$, $p=3$), where warm-start consistently outperforms random initialisation in both median ratio and variance. No general theoretical guarantee for warm-start exists; the empirical benefit is graph- and depth-dependent.
+
+![Warm-start vs random initialisation](figures/warmstart_comparison.png)
+*Approximation ratio distribution on $C_{10}+3$ chords, $p=3$: warm-start (orange) vs random initialisation (blue) over 60 trials. Warm-start achieves higher median ratio and lower variance. Dashed line: GW bound (0.8786).*
 
 ### 7. Practical Guidelines
 

@@ -56,6 +56,9 @@ applied qubit-by-qubit in $O(n \cdot 2^n)$ time. Optimisation uses COBYLA with 2
 
 Results are reported as approximation ratios $F_p / C_{\max}$ to allow comparison across graphs with different optimal cut values.
 
+![Three graph instances](figures/graph_instances.png)
+*$C_{10}$ (cycle), $C_{10}+3$ chords (chord edges in red dashed), 3-regular ($n=10$). Constructed before running experiments; shown here for reference.*
+
 ### 4. Results and Discussion
 
 **$C_{10}$ (cycle):**
@@ -69,6 +72,12 @@ Results are consistent with the chord graph: QAOA $p=1$ is competitive with sing
 
 **Overall pattern:**
 QAOA $p=1$ reliably beats random assignment and single-pass greedy, but does not beat best-of-5 greedy or GW on any instance tested. QAOA $p=3$ matches or exceeds best-of-5 greedy on the chord graph — the instance where greedy is most disrupted by long-range structure — but at substantially higher cost. On the cycle, where graph structure is most regular and greedy is strong, the advantage of deeper QAOA is smaller. The Goemans–Williamson bound is not approached until $p=3$ and is not matched on any instance.
+
+![Full algorithm comparison](figures/algorithm_comparison.png)
+*Approximation ratios for all seven methods across three graph instances. Dashed line: GW bound (0.8786). QAOA $p=1$ sits between single-pass and best-of-5 greedy; $p=3$ exceeds best-of-5 greedy only on the chord graph.*
+
+![QAOA depth dependence per graph](figures/qaoa_depth_comparison.png)
+*Approximation ratio vs QAOA depth $p \in \{1,2,3\}$ for each graph instance, with classical baselines shown as horizontal reference lines. Depth gain is most pronounced on the chord graph and smallest on the plain cycle.*
 
 ---
 
@@ -96,11 +105,17 @@ Approximation ratio degrades monotonically with $p_{cx}$ for all depths and grap
 
 At low error rates ($p_{cx} \lesssim 0.002$), $p=3$ retains its noiseless advantage over $p=1$ and $p=2$. As $p_{cx}$ increases, this advantage shrinks and eventually reverses.
 
+![Noise degradation curves](figures/noise_degradation.png)
+*Approximation ratio vs CX error rate $p_{cx}$ for $p=1,2,3$ on all three graph instances. Deeper circuits degrade faster due to higher CX gate count ($2p|E|$). The ordering among depths reverses as $p_{cx}$ increases.*
+
 ### 4. Crossover Analysis
 
 The **crossover point** $p_{cx}^*$ is the error rate at which a shallower circuit first outperforms a deeper one. Under the depolarizing model used here, $p=2$ and $p=3$ remain competitive at low error rates, while $p=1$ becomes the preferred depth above approximately $p_{cx} \approx 1\%$.
 
 This has a direct practical implication: the optimal QAOA depth on near-term hardware is not determined by expressibility alone. It is determined by the interplay between the marginal quality gain from an additional layer and the additional noise that layer introduces. For current NISQ devices with CX fidelities in the range $99\text{–}99.5\%$ ($p_{cx} \approx 0.5\text{–}1\%$), these results suggest that $p=2$ or $p=3$ are near the boundary of being beneficial.
+
+![Crossover analysis](figures/crossover_analysis.png)
+*Depth crossover points per graph: $p=1$, $p=2$, $p=3$ approximation ratios plotted against $p_{cx}$. The $p_{cx}$ value at which $p=1$ first outperforms $p=3$ is marked for each instance.*
 
 ### 5. Landscape Flattening
 
@@ -109,6 +124,9 @@ Noise reduces the variance of the energy landscape $F_1(\gamma, \beta)$ across t
 $$\Delta = \mathrm{std}_{(\gamma,\beta) \in [0,\pi/2]^2}\bigl[F_1^{\text{noisy}}(\gamma, \beta)\bigr]$$
 
 decreases with $p_{cx}$: at $p_{cx} = 0$ the landscape has a well-defined peak, while at $p_{cx} = 0.02$ the landscape is nearly flat. This has two consequences. First, the noiseless optimal parameters become increasingly suboptimal as noise grows — the landscape maximum shifts and shrinks. Second, any attempt to re-optimise parameters on hardware faces a flattening objective, which compounds the barren plateau problem identified in Notebook 04. Noise and barren plateaus act in the same direction: both reduce the gradient signal available to the optimiser.
+
+![Landscape flattening under noise](figures/landscape_flattening.png)
+*$F_1(\gamma,\beta)$ landscape for $C_{10}$ at $p_{cx}=0$ (noiseless, left) and $p_{cx}=1\%$ (right). The landscape standard deviation $\Delta$ decreases substantially with noise, leaving the optimiser with a nearly featureless surface to navigate.*
 
 ---
 

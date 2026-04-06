@@ -47,6 +47,9 @@ Minimising within-group correlation is therefore equivalent to **maximising the 
 
 **Solution.** The weighted MaxCut SDP (Goemans–Williamson generalised to weighted graphs) is applied and the rounded solution is shown to align with sector boundaries.
 
+![Portfolio correlation graph and MaxCut solution](figures/portfolio_graph.png)
+*Left: weighted correlation graph on 8 assets; edge thickness proportional to $|\rho_{ij}|$. Right: GW-rounded MaxCut solution — node colour indicates partition assignment. The cut recovers the Tech / Finance / Energy sector boundaries.*
+
 ---
 
 ## 3. Further Reductions
@@ -82,6 +85,9 @@ Every QUBO maps to an Ising Hamiltonian via $z_i = (1 - s_i)/2$, $s_i \in \{-1,+
 $$H_C = \sum_{(i,j) \in E} \frac{w_{ij}}{2}(I - Z_iZ_j) + \text{const}$$
 
 This is the same $H_C$ that appears in all subsequent notebooks. The QAOA circuit is therefore not specific to MaxCut — it is a general variational ansatz for any QUBO problem, and the only modification needed to apply it to the problems above is changing the edge weights.
+
+![QUBO unification taxonomy](figures/qubo_taxonomy.png)
+*Problem hierarchy: real-world binary optimisation problems (portfolio, scheduling, facility location, network design) all reduce to QUBO, which maps to an Ising Hamiltonian, which is the input to the QAOA circuit.*
 
 ---
 

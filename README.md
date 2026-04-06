@@ -1,5 +1,6 @@
 # QAOA for Maximum Cut
 
+**Physics 565/656 · Spring 2026 · Sehong Park**
 
 **A quantitative comparison of QAOA against classical MaxCut algorithms: performance, limits, and noise robustness.**
 
@@ -14,6 +15,9 @@ Seven notebooks build the comparison from scratch — problem motivation and mat
 - **Noise limits the usable depth**: above ~1% CX error rate, $p=1$ outperforms $p=3$. The crossover point is hardware-dependent.
 - **Gradient correctness (per-edge parameter-shift)** is a more critical bottleneck than optimizer choice.
 - Overall: QAOA is competitive in a **narrow regime defined by graph structure, circuit depth, and hardware fidelity**. The depth at which it would clearly outperform classical methods likely exceeds what current NISQ hardware can support reliably.
+
+![Algorithm comparison](results/figures/algorithm_comparison.png)
+*Approximation ratios for all methods across three graph instances (noiseless simulation). Left: full comparison including classical baselines and GW bound (dashed). Right: QAOA ratio vs depth $p$ — monotone increase with $p$, most pronounced on the chord graph.*
 
 ---
 
