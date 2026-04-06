@@ -1,7 +1,5 @@
 # QAOA for Maximum Cut
 
-**Physics 565/656 · Spring 2026 · Sehong Park**
-
 **A quantitative comparison of QAOA against classical MaxCut algorithms: performance, limits, and noise robustness.**
 
 Seven notebooks build the comparison from scratch — problem motivation and mathematical foundations, circuit verification and optimizer methodology, experimental benchmarks against classical baselines, and noise robustness analysis under a depolarizing model.
