@@ -1,243 +1,138 @@
-# QAOA for MaxCut: Optimization Behavior, Scaling, and Noise Sensitivity
+# QAOA for Maximum Cut
 
-A circuit-level implementation and empirical study of the Quantum Approximate Optimization
-Algorithm (QAOA) on the MaxCut problem, covering theory, optimizer comparison, multi-graph
-experiments, and depolarizing noise analysis.
 
----
+**A quantitative comparison of QAOA against classical MaxCut algorithms: performance, limits, and noise robustness.**
 
-## Tech Stack
-
-| Layer | Tools |
-|-------|-------|
-| Quantum simulation | Qiskit, Qiskit Aer (statevector + density matrix) |
-| Classical optimization | SciPy (COBYLA, Nelder-Mead, L-BFGS-B, SPSA) |
-| SDP baseline (GW) | CVXPY |
-| Graph construction | NetworkX |
-| Numerics / plotting | NumPy, Matplotlib |
+Seven notebooks build the comparison from scratch — problem motivation and mathematical foundations, circuit verification and optimizer methodology, experimental benchmarks against classical baselines, and noise robustness analysis under a depolarizing model.
 
 ---
 
-## Setup
+## TL;DR
 
-```bash
-pip install qiskit qiskit-aer scipy cvxpy networkx numpy matplotlib
+- **Noiseless QAOA improves monotonically with depth**: $p=1,2,3$ approximation ratios increase consistently across all graph instances tested.
+- **Shallow QAOA ($p \leq 3$) does not outperform GW or best-of-5 greedy in general** — it gains a marginal advantage only on graphs where local heuristics fail (long-range edges).
+- **Noise limits the usable depth**: above ~1% CX error rate, $p=1$ outperforms $p=3$. The crossover point is hardware-dependent.
+- **Gradient correctness (per-edge parameter-shift)** is a more critical bottleneck than optimizer choice.
+- Overall: QAOA is competitive in a **narrow regime defined by graph structure, circuit depth, and hardware fidelity**. The depth at which it would clearly outperform classical methods likely exceeds what current NISQ hardware can support reliably.
+
+---
+
+## Repository Structure
+
+```
+.
+├── motivation/
+│   └── 00_Applications_and_Motivation.ipynb
+├── theory/
+│   ├── 01_QAOA_Theory_Part1_Hamiltonian.ipynb
+│   └── 02_QAOA_Theory_Part2_Circuits_and_Landscape.ipynb
+├── implementation/
+│   ├── 03_QAOA_C4_Complete_Analysis.ipynb
+│   └── 04_QAOA_Optimizer_Comparison.ipynb
+└── results/
+    ├── 05_QAOA_Experiments.ipynb
+    └── 06_QAOA_Noise.ipynb
 ```
 
-Then open the notebooks in order (see Project Structure below).
-Tested on Python 3.10+.
+Each folder has its own README with full mathematical detail. This document gives the project-level overview.
 
 ---
 
-## Key Questions
+## Project Arc
 
-- When does QAOA perform well on combinatorial optimization problems?
-- How sensitive is QAOA to optimizer choice and initialization?
-- How does circuit depth affect performance and optimization difficulty?
-- How does noise impact solution quality and optimal circuit depth?
+### Motivation
+**Why MaxCut?** Portfolio diversification, job scheduling, facility location, and network partitioning all reduce to a weighted cut problem on an appropriate graph. The unifying structure is QUBO (Quadratic Unconstrained Binary Optimisation):
 
----
+$$\min_{z \in \{0,1\}^n} z^T Q z \;\longleftrightarrow\; H_C = \sum_{(i,j) \in E} \frac{w_{ij}}{2}(I - Z_iZ_j)$$
 
-## Problem Formulation
+The QAOA circuit is not specific to MaxCut — it is a general variational ansatz for any QUBO, with only the edge weights changing across problem instances. Whether this mechanism provides any advantage over classical methods is the question the project investigates.
 
-The MaxCut problem is encoded as a QUBO:
+### Theory
+The theory notebooks derive the full mathematical structure of QAOA from scratch, assuming linear algebra background but minimal physics prerequisite.
 
-$$\max \sum_{(i,j)\in E} w_{ij} (x_i + x_j - 2x_i x_j), \quad x_i \in \{0,1\}$$
+**Part I** (Notebook 01) builds the chain: MaxCut combinatorics → Ising spin model → quantum Hamiltonian via Pauli-Z. The key step is the substitution $s_i \to Z_i$, which is exact on all computational basis states simultaneously, giving
 
-which maps to the Ising cost Hamiltonian:
+$$H_C = \sum_{(i,j) \in E} \frac{I - Z_iZ_j}{2}$$
 
-$$H_C = \sum_{(i,j)\in E} \frac{w_{ij}}{2}(I - Z_i Z_j)$$
+with diagonal entries equal to $C(z)$. The QAOA ansatz
 
-Each edge contributes a CNOT–$R_Z(\gamma)$–CNOT block per layer; the gate count scales
-as $2p|E|$ CX gates for a depth-$p$ circuit.
+$$|\psi_p(\boldsymbol{\gamma}, \boldsymbol{\beta})\rangle = U_B(\beta_p) U_C(\gamma_p) \cdots U_B(\beta_1) U_C(\gamma_1) |+\rangle^{\otimes n}$$
 
----
+is derived and each component justified: $U_C(\gamma) = e^{-i\gamma H_C}$ performs phase separation (not amplitude reshaping); $U_B(\beta) = e^{-i\beta \sum_i X_i}$ mixes amplitudes; $|+\rangle^{\otimes n}$ is the maximum-eigenvalue eigenstate of $H_B$.
 
-## Project Structure
+**Part II** (Notebook 02) covers the classical algorithms QAOA competes against, derives the CNOT–$R_Z$–CNOT gate decomposition of $U_C$, and characterises the optimisation landscape including barren plateaus and three distinct sources of numerical error.
 
-### `00` — Applications and Motivation
-Uses MaxCut as the canonical QUBO testbed, motivated by its appearance as the core
-pairwise structure in several classes of practical binary optimization problems
-(job scheduling, portfolio diversification, facility placement, network design).
-Some reductions to MaxCut are exact (e.g. unweighted scheduling); others are more
-naturally expressed as general QUBO formulations that share the same Ising Hamiltonian
-structure. Many of these reduce to similar QUBO structures with the same Ising Hamiltonian form — often differing in edge weights and additional linear terms.
+### Implementation
+The implementation notebooks make all analytical and algorithmic choices explicit before those choices are committed to the larger pipeline.
 
-### `01` — QAOA Theory: Hamiltonian Formulation
-Derives the Ising Hamiltonian from the MaxCut binary program step by step, introduces
-cost and mixer Hamiltonians, and constructs the QAOA ansatz. Includes explicit
-gate-count formulas and a justification for the $|{+}\rangle^{\otimes n}$ initial state.
+**Notebook 03** verifies the circuit construction gate-by-gate on $C_4$ — the smallest bipartite cycle, with $C_{\max} = 4$ and exact optimal parameters $\gamma^* = \pi/4$, $\beta^* = \pi/8$ at $p=1$. Statevector evolution is traced step by step; the CNOT–$R_Z$–CNOT decomposition is verified numerically to $< 10^{-14}$ against `scipy.linalg.expm`. Resource counts are established: CX gates $= 2p|E|$, reducible to $O(2p)$ depth via edge 2-coloring on $C_4$.
 
-### `02a` — QAOA Theory: Circuits and Landscape
-Gate-level decomposition of $U_C(\gamma)$ from first principles (CNOT–$R_Z$–CNOT),
-comparison with classical baselines (random, greedy, Goemans–Williamson), and a
-mathematical treatment of barren plateaus — including why gradient variance does not vanish as rapidly as in generic global-cost ansätze, due to the locality of the cost Hamiltonian.
+**Notebook 04** establishes the correct gradient formulation and benchmarks four optimisers (COBYLA, Nelder-Mead, L-BFGS-B, SPSA) on $C_{10}$. The central finding is that **per-edge parameter-shift correctness is a prerequisite, not an optimisation detail**: shifting the global $\gamma$ by $\pi/2$ simultaneously across all edges gives a wrong gradient regardless of which solver is used downstream. The correct formulation sums per-edge shifts:
 
-### `02b` — C4 Complete Analysis
-Exact gate-by-gate analysis on the 4-cycle as a controlled calibration instance.
-Tracks statevector evolution, computes analytic optima ($\gamma^* = \pi/4$,
-$\beta^* = \pi/8$), and scales to $p = 1, 2, 3$.
+$$\frac{\partial F_p}{\partial \gamma_\ell} = \frac{1}{2} \sum_{(i,j) \in E} \left[F_p(\ldots,\, \gamma_\ell^{(ij)} + \tfrac{\pi}{2},\, \ldots) - F_p(\ldots,\, \gamma_\ell^{(ij)} - \tfrac{\pi}{2},\, \ldots)\right]$$
 
-### `03` — Optimizer Comparison
-Benchmarks COBYLA, Nelder-Mead, L-BFGS-B, and SPSA on $C_{10}$ at $p=2$ with
-30 random restarts. Covers the parameter-shift rule, warm-start layer-by-layer
-initialization (Zhou et al. 2020), and practical failure modes.
+Layer-by-layer warm-start (Zhou et al. 2020) is demonstrated to reduce variance at $p=3$ on a chord graph.
 
-### `04` — Experiments
-Evaluates QAOA at $p = 1, 2, 3$ against Random, Greedy, Best-of-5 Greedy, and
-Goemans–Williamson on three graph instances: $C_{10}$, $C_{10}$ + 3 chords,
-and a 3-regular graph ($n=10$).
+### Results
+**Notebook 05** benchmarks QAOA $p=1,2,3$ against four classical algorithms — random assignment, single-pass greedy, best-of-5 greedy, and Goemans–Williamson SDP — on three graph instances with distinct structural properties.
 
-### `05` — Noise Analysis
-Sweeps depolarizing CX error rate $p_{cx} \in [0, 0.025]$ using noiseless optimal
-parameters to isolate noise effects. Measures landscape flattening and identifies
-depth-noise crossover points.
+**Notebook 06** sweeps depolarizing CX error rate $p_{cx} \in [0, 0.025]$ on all three graphs and identifies the circuit depth at which additional layers become counterproductive.
 
 ---
 
-## Key Results
+## Key Findings
 
-### C4 — Controlled instance
+### Performance vs Classical
 
-| Depth $p$ | Approx. ratio | $P(\text{max cut})$ | CX gates |
-|-----------|--------------|---------------------|----------|
-| 1 | 0.750 | 0.531 | 8 |
-| 2 | **1.000** | **1.000** | 16 |
-| 3 | **1.000** | **1.000** | 24 |
+**1. QAOA $p=1$ beats single-pass greedy but not best-of-5 greedy or GW on any instance tested.**
+The right classical baseline is best-of-5 greedy, not single-pass greedy: it is almost always stronger and far cheaper than a single QAOA objective evaluation. GW remains superior on all instances.
 
-$C_4$ is bipartite — QAOA achieves the exact optimum at $p=2$ and maintains
-it at $p=3$.
+**2. QAOA gains the most where greedy is weakest.**
+On the chord graph ($C_{10}$ + 3 long-range edges), single-pass greedy drops to ratio $0.726$ while QAOA $p=3$ reaches $0.872$, marginally above best-of-5 greedy ($0.864$). On the plain cycle, where greedy is stronger, the advantage of deeper QAOA is smaller. This is consistent with QAOA's known locality limitation: shallow QAOA cannot distinguish graphs that agree within radius $p$ of every vertex (Bravyi et al. 2021).
 
-### Multi-graph experiments
+### Algorithmic Insight
 
-Three graphs with distinct structural regimes: a 2-regular cycle (analytically tractable),
-a cycle with long-range chords (disrupted locality), and a 3-regular graph (the instance
-studied in Farhi et al. 2014).
+**3. Gradient correctness is a more fundamental bottleneck than optimizer choice.**
+Shifting the global $\gamma$ by $\pi/2$ simultaneously across all edges gives a wrong gradient on $C_4$ regardless of which solver is used downstream. The correct formulation sums per-edge shifts; fixing this is a prerequisite before any optimizer comparison is meaningful.
 
-| Method | $C_{10}$ ($\|E\|=10$, OPT=10) | $C_{10}$ + chords ($\|E\|=13$, OPT=13) | 3-regular ($\|E\|=15$, OPT=13) |
-|--------|-------------------------------|----------------------------------------|-------------------------------|
-| Random | 0.499 | 0.500 | 0.576 |
-| Greedy (1-pass) | 0.659 | 0.726 | 0.845 |
-| Greedy (best-of-5) | 0.810 | 0.864 | **0.937** |
-| Goemans–Williamson | **1.000** | **1.000** | **1.000** |
-| QAOA $p=1$ | 0.750 | 0.707 | 0.775 |
-| QAOA $p=2$ | 0.833 | 0.791 | 0.851 |
-| QAOA $p=3$ | 0.875 | **0.872** | 0.901 |
+### Hardware Constraints
 
-Key observations:
-- **$C_{10}$ + 3 chords**: QAOA $p=3$ (0.872) edges out Best-of-5 Greedy (0.864). Adding
-  long-range chords breaks the local structure that greedy exploits, giving QAOA a relative
-  advantage.
-- **3-regular**: QAOA $p=3$ (0.901) surpasses Greedy 1-pass (0.845) but falls short of
-  Best-of-5 (0.937). The denser graph ($|E|=15$) gives greedy more local signal to work with,
-  while also increasing QAOA's CX gate count (30 per layer vs. 20 for $C_{10}$).
-- GW achieves the optimum on the three instances considered here.
+**4. Deeper circuits are not unconditionally better under noise.**
+Under the depolarizing model used here, $p=3$ has $3\times$ more CX gates than $p=1$ and degrades faster. Above $p_{cx} \approx 1\%$, $p=1$ outperforms $p=3$ on all three graphs. The optimal depth is a function of both the target approximation ratio and the native CX fidelity of the device.
 
-### Optimizer comparison — $C_{10}$, $p=2$, 30 random starts
-
-| Optimizer | Best ratio | Mean | Std | Function evals |
-|-----------|-----------|------|-----|----------------|
-| L-BFGS-B | 0.8333 | 0.8333 | 0.000 | **22** |
-| Nelder-Mead | 0.8333 | 0.8333 | 0.000 | 280 |
-| COBYLA | 0.8333 | 0.8328 | 0.002 | 268 |
-| SPSA | 0.8333 | 0.8183 | 0.024 | 901 |
-
-L-BFGS-B with the parameter-shift gradient converges to the same optimum as
-Nelder-Mead at **13× fewer function evaluations**. SPSA has the highest variance
-and cost.
-
-### Noise analysis — approximation ratio vs. $p_{cx}$ (depolarizing on CX gates)
-
-CX gates per layer: $C_{10}$ = 20, $C_{10}$+chords = 26, 3-regular = 30.
-
-**$C_{10}$** (total CX at $p=3$: 60 gates)
-
-| $p_{cx}$ | $p=1$ | $p=2$ | $p=3$ |
-|----------|-------|-------|-------|
-| 0.000 | 0.750 | 0.834 | 0.876 |
-| 0.010 | 0.737 | 0.797 | 0.816 |
-| 0.020 | 0.724 | 0.765 | **0.763** ← crossover |
-| 0.025 | 0.717 | 0.752 | 0.742 |
-
-**$C_{10}$ + 3 chords** (total CX at $p=3$: 78 gates)
-
-| $p_{cx}$ | $p=1$ | $p=2$ | $p=3$ |
-|----------|-------|-------|-------|
-| 0.000 | 0.707 | 0.792 | 0.872 |
-| 0.010 | 0.692 | 0.748 | 0.777 |
-| 0.020 | 0.680 | 0.711 | **0.712** ← crossover |
-| 0.025 | 0.670 | 0.694 | 0.685 |
-
-**3-regular ($n=10$)** (total CX at $p=3$: 90 gates)
-
-| $p_{cx}$ | $p=1$ | $p=2$ | $p=3$ |
-|----------|-------|-------|-------|
-| 0.000 | 0.777 | 0.850 | 0.891 |
-| 0.010 | 0.758 | 0.807 | **0.802** ← crossover |
-| 0.015 | 0.752 | 0.787 | 0.767 |
-| 0.020 | 0.747 | 0.767 | 0.744 |
-
-The crossover point (where $p=3$ is overtaken by $p=2$) is earlier for denser graphs:
-$p_{cx} \approx 0.020$ for $C_{10}$, $\approx 0.020$ for $C_{10}$+chords, and
-**$\approx 0.010$ for 3-regular** — consistent with the increased CX count per layer
-gates per layer than $C_{10}$. The landscape standard deviation on $C_{10}$
-drops 10.9% at $p_{cx}=0.02$, further degrading optimizer reliability.
+**5. Noise and barren plateaus act in the same direction.**
+Depolarizing noise flattens the energy landscape monotonically with $p_{cx}$. This compounds the barren plateau effect: both mechanisms reduce the gradient signal available to the optimiser and cannot be addressed independently.
 
 ---
 
-## Interpretation
+## Honest Scope
 
-Performance is determined by three interacting factors — not by circuit expressiveness alone:
-
-**Optimization dynamics.** For $p \geq 2$, the landscape is non-convex with multiple
-local optima. Multi-start strategies and warm initialization are necessary for
-reproducible results; SPSA without warm-start fails to match gradient-based methods
-even with $40\times$ more function evaluations.
-
-**Problem structure.** QAOA's locality limitation (depth $p$ can only see radius-$p$
-graph neighborhoods) means that on the instances tested, graphs with long-range
-connectivity (chords) can in some cases favor QAOA, as observed in our chorded cycle instance, while denser regular graphs
-give greedy more local signal to work with. Whether this pattern generalizes requires
-experiments on larger and more varied instances.
-
-**Noise and depth tradeoff.** Each additional QAOA layer adds $2|E|$ CX gates.
-The crossover point where $p=3$ loses to $p=2$ depends directly on graph density:
-$p_{cx} \approx 0.020$ for $C_{10}$ (20 CX/layer) but $\approx 0.010$ for
-3-regular (30 CX/layer). On NISQ-era hardware the optimal circuit depth is
-graph-dependent, not just hardware-dependent.
+All experiments use statevector simulation (noiseless) or Qiskit Aer with a simplified depolarizing model. Graphs are small ($n = 10$) and unweighted. The noise model does not capture coherent errors, crosstalk, or qubit-specific variation. Findings should be interpreted as indicative of trends on small instances under idealised conditions, not as predictions for specific hardware or large-scale problems.
 
 ---
 
-## Limitations
+## Dependencies
 
-- All experiments are limited to $n \leq 10$ qubits and three graph instances — results should be treated as illustrative rather than general.
-- Noise model is idealized 2-qubit depolarizing; crosstalk and readout errors are not included.
-- Noiseless optimal parameters are reused for noise sweeps — re-optimization under
-  noise would likely shift crossover points.
-- No quantum advantage is demonstrated; GW matches or exceeds QAOA on all instances tested.
+```
+numpy scipy matplotlib networkx qiskit qiskit-aer cvxpy
+```
 
----
+Install via:
 
-## Conclusion
-
-QAOA at $p=3$ outperforms Best-of-5 Greedy on the chorded cycle instance but falls short on denser graphs
-where greedy has more local signal (3-regular: QAOA 0.901 vs. Best-of-5 0.937).
-Optimizer choice matters substantially: L-BFGS-B with parameter-shift gradients
-reaches the same best ratio as Nelder-Mead at 13× fewer function evaluations.
-Under depolarizing noise, the depth–noise crossover is graph-dependent — the
-3-regular graph's 50% higher CX count per layer shifts the crossover from
-$p_{cx} \approx 0.020$ (on $C_{10}$) down to $\approx 0.010$, meaning hardware
-fidelity requirements tighten with graph density. These findings suggest that
-benchmarking QAOA requires jointly reporting the approximation ratio, optimizer
-budget, graph structure, and noise regime under which results were obtained.
+```bash
+pip install numpy scipy matplotlib networkx qiskit qiskit-aer cvxpy
+```
 
 ---
 
 ## References
 
-- Farhi, Goldstone, Gutmann. *A quantum approximate optimization algorithm.* arXiv:1411.4028 (2014).
-- Goemans, Williamson. *Improved approximation algorithms for maximum cut.* JACM 42(6), 1995.
+- Farhi, Goldstone, Gutmann. *A quantum approximate optimization algorithm.* arXiv:1411.4028, 2014.
+- Goemans, Williamson. *Improved approximation algorithms for maximum cut and satisfiability problems using semidefinite programming.* JACM 42(6), 1995.
+- Karp, R. *Reducibility among combinatorial problems.* 1972.
+- Khot et al. *Optimal inapproximability results for MAX-CUT and other 2-variable CSPs.* JACM 54(3), 2007.
 - McClean et al. *Barren plateaus in quantum neural network training landscapes.* Nature Commun. 9, 2018.
 - Wang et al. *Noise-induced barren plateaus in variational quantum algorithms.* Nature Commun. 12, 2021.
-- Zhou et al. *Quantum approximate optimization algorithm: Performance, mechanism, and implementation.* PRX Quantum 1, 2020.
-- Bravyi et al. *Obstacles to variational quantum optimization from symmetry protection.* PRL 125, 2020.
+- Cerezo et al. *Cost function dependent barren plateaus in shallow parametrized quantum circuits.* Nature Commun. 12, 2021.
+- Bravyi et al. *Obstacles to variational quantum optimization from symmetry protection.* arXiv:2110.14206, 2021.
+- Zhou et al. *Quantum approximate optimization algorithm: Performance, mechanism, and implementation on near-term devices.* Phys. Rev. X 10, 2020.
