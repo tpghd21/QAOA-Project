@@ -1,157 +1,127 @@
-# QAOA for Maximum Cut — Theory Notebooks
+# Chapter 3 — Theory: From the Cost Function to a Cost Hamiltonian
 
-
-This pair of notebooks builds the complete theoretical foundation for the Quantum Approximate Optimization Algorithm (QAOA) applied to Maximum Cut, starting from the combinatorial problem and ending with a precise characterisation of why optimisation is difficult.
-
----
-
-## Notebook Overview
+This folder builds the theoretical foundation of QAOA for MaxCut: how the classical cost function becomes a quantum operator, why the QAOA ansatz has the form it does, and what classical baselines QAOA must compete against.
 
 | Notebook | Title | Contents |
 |---|---|---|
-| `01_QAOA_Theory_Part1_Hamiltonian.ipynb` | From Combinatorial Problem to Quantum Hamiltonian | MaxCut → Ising → H_C → QAOA ansatz |
-| `02_QAOA_Theory_Part2_Circuits_and_Landscape.ipynb` | Classical Algorithms, Gate Decomposition, and Landscape Geometry | GW baseline → gate decomposition → barren plateaus → error budget |
+| `01_QAOA_Theory_Part1_Hamiltonian.ipynb` | From Combinatorial Problem to Quantum Hamiltonian | MaxCut → Ising → $H_C$ → QAOA ansatz |
+| `02_QAOA_Theory_Part2_Circuits_and_Landscape.ipynb` | Circuits, Classical Baselines, and Landscape | CNOT–$R_Z$–CNOT decomposition, greedy & GW, barren plateaus |
 
 ---
 
-## Part I — From Combinatorial Problem to Quantum Hamiltonian
+## Part I — From combinatorial problem to quantum Hamiltonian
 
-### 1. MaxCut: Combinatorial Formulation
+### 1. What are we looking for?
 
-Given an undirected graph $G = (V, E)$ with $|V| = n$, the MaxCut problem asks for a partition $(S, \bar{S})$ of $V$ that maximises the number of crossing edges:
+After running QAOA we measure $|\psi\rangle$ in the computational basis. A measurement gives a bitstring $z = z_0 z_1 \cdots z_{n-1}$. We interpret it as a partition via
 
-$$\text{MaxCut}(G) = \max_{S \subseteq V} \sum_{(i,j) \in E} \mathbf{1}[i \in S,\ j \notin S]$$
+$$z_i = 0 \;\Leftrightarrow\; i \in S, \qquad z_i = 1 \;\Leftrightarrow\; i \in \bar S$$
 
-Assigning binary variables $z_i \in \{0,1\}$ (with $z_i = 0 \Leftrightarrow i \in S$), the indicator for edge $(i,j)$ being cut is:
+On $C_4$, bitstrings like $|1010\rangle$ and $|0101\rangle$ correspond to the two MaxCut partitions with cut value $4$. **The goal of QAOA is to maximise the probability of sampling a bitstring whose cut value equals $C_{\max}$.**
 
-$$\mathbf{1}[z_i \neq z_j] = z_i + z_j - 2z_iz_j = \frac{1 - (-1)^{z_i + z_j}}{2}$$
+### 2. Cost Hamiltonian: three steps
 
-The total cut value is $C(z) = \sum_{(i,j) \in E} \mathbf{1}[z_i \neq z_j]$. MaxCut is NP-hard in general (Karp 1972), so the classical polynomial-time algorithms in Part II all produce approximations.
+The classical cost function $C(z) = \sum_{(i,j) \in E} \mathbf{1}[z_i \neq z_j]$ becomes a quantum operator in three substitutions.
 
-The running example throughout is the 4-cycle $C_4$, which has optimal cut value 4 (all edges crossing), achieved by any 2-coloring of the cycle.
+**Step 1 — Decision variable.** $z_i \in \{0, 1\}$ with the partition convention above. Then
 
-![C4 MaxCut](figures/c4_maxcut.png)
-*$C_4$ with its optimal 2-coloring (left) and the corresponding bitstring-to-cut-value mapping (right). Red nodes $\{0,2\}$ and blue nodes $\{1,3\}$ form the two partition sides; all 4 edges cross the cut.*
+$$C(z) = \sum_{(i,j) \in E} \mathbf{1}[z_i \neq z_j]$$
 
-### 2. Classical Ising Encoding
+**Step 2 — Rewrite with spin variable.** Substitute $s_i = 1 - 2 z_i \in \{+1, -1\}$. A short check:
 
-The **Ising model** on $G$ assigns spin variables $s_i \in \{-1, +1\}$ to each vertex. Under the substitution $s_i = 1 - 2z_i$ (so $z_i = 0 \Rightarrow s_i = +1$, $z_i = 1 \Rightarrow s_i = -1$), an edge $(i,j)$ is cut if and only if $s_is_j = -1$:
+$$\mathbf{1}[z_i \neq z_j] = \frac{1 - s_i s_j}{2}$$
 
-$$C(s) = \sum_{(i,j) \in E} \frac{1 - s_is_j}{2}$$
+This rewrites $C$ as a polynomial in $\pm 1$ spins, i.e. a classical **Ising model**.
 
-Maximising $C(s)$ is equivalent to minimising the antiferromagnetic Ising energy $-\sum_{(i,j)} J_{ij}\, s_is_j$ with $J_{ij} = -1$. This equivalence is the bridge from combinatorics to physics.
+**Step 3 — Quantise.** Replace $s_i \to Z_i$ (Pauli-$Z$ on qubit $i$). Because $Z_i$ is diagonal in the computational basis with eigenvalues $\pm 1$ matching $s_i$, the substitution is **exact** on every basis state simultaneously. The result is the **cost Hamiltonian**:
 
-### 3. Quantum Hamiltonian via Pauli-Z
+$$\boxed{\; H_C = \sum_{(i,j) \in E} \frac{I - Z_i Z_j}{2} \;}$$
 
-Each qubit $i$ carries a Pauli-Z operator
+Key property: $H_C$ is diagonal in the computational basis, and its $(z, z)$ entry is exactly $C(z)$. So maximising $\langle \psi | H_C | \psi \rangle$ concentrates $|\psi\rangle$ on high-cut bitstrings.
 
-$$Z_i = \begin{pmatrix}1 & 0 \\ 0 & -1\end{pmatrix}_i \otimes I_{\text{rest}}$$
+On $C_4$, $H_C$ is a $16 \times 16$ diagonal matrix with maximum eigenvalue $4$, attained on $|0101\rangle$ and $|1010\rangle$.
 
-which acts on the computational basis as $Z_i|z\rangle = (-1)^{z_i}|z\rangle = s_i|z\rangle$. Replacing $s_i \to Z_i$ is therefore exact on all basis states simultaneously. The **cost Hamiltonian** is:
-
-$$\boxed{H_C = \sum_{(i,j) \in E} \frac{I - Z_iZ_j}{2}}$$
-
-$H_C$ is diagonal in the computational basis; its $(z,z)$ diagonal entry is exactly $C(z)$. Maximising $\langle \psi | H_C | \psi \rangle$ over all states $|\psi\rangle$ therefore selects the state(s) concentrated on maximum-cut bitstrings.
-
-For $C_4$ the Hamiltonian expands to a $16 \times 16$ diagonal matrix with maximum eigenvalue 4, achieved by $|0101\rangle$ and $|1010\rangle$.
-
-### 4. QAOA Ansatz
+### 3. The QAOA ansatz
 
 QAOA prepares a parameterised state by alternating two families of unitaries over $p$ layers:
 
-$$|\psi_p(\boldsymbol{\gamma}, \boldsymbol{\beta})\rangle = U_B(\beta_p)\, U_C(\gamma_p) \cdots U_B(\beta_1)\, U_C(\gamma_1)\, |+\rangle^{\otimes n}$$
+$$|\psi_p(\boldsymbol\gamma, \boldsymbol\beta)\rangle = U_B(\beta_p) U_C(\gamma_p) \cdots U_B(\beta_1) U_C(\gamma_1)\, |+\rangle^{\otimes n}$$
 
-where
+- **Cost unitary** $U_C(\gamma) = e^{-i\gamma H_C}$: imprints a phase $e^{-i\gamma C(z)}$ on each basis state. On its own this is **phase separation** — all probabilities $|\langle z | \psi \rangle|^2$ remain unchanged.
+- **Mixer unitary** $U_B(\beta) = e^{-i\beta H_B}$ with $H_B = \sum_i X_i$: rotates amplitudes between Hamming-1 neighbours. This is what redistributes probability — probabilities change through the interference between phases imprinted by $U_C$ and amplitude mixing by $U_B$.
+- **Parameters** $(\boldsymbol\gamma, \boldsymbol\beta) \in \mathbb{R}^{2p}$ are tuned to maximise $F_p = \langle \psi_p | H_C | \psi_p \rangle$.
 
-- **Cost unitary:** $U_C(\gamma) = e^{-i\gamma H_C}$ — imprints a phase $e^{-i\gamma C(z)}$ on each computational basis state $|z\rangle$. This is phase separation, not amplitude reshaping; the redistribution of probability mass toward high-cut bitstrings emerges only through subsequent interaction with the mixer.
-- **Mixer unitary:** $U_B(\beta) = e^{-i\beta H_B}$ with $H_B = \sum_i X_i$ — rotates amplitudes between bitstrings, preventing the state from collapsing to a single configuration.
+### 4. Why start from $|+\rangle^{\otimes n}$?
 
-The objective is to choose $\boldsymbol{\gamma}, \boldsymbol{\beta} \in \mathbb{R}^p$ to maximise
+The starting state $|+\rangle^{\otimes n} = H^{\otimes n} |0\rangle^{\otimes n} = 2^{-n/2} \sum_{z} |z\rangle$ is chosen for four reasons:
 
-$$F_p(\boldsymbol{\gamma}, \boldsymbol{\beta}) = \langle \psi_p | H_C | \psi_p \rangle$$
+1. **Uniform over candidates.** Every bitstring has the same initial amplitude — no partition is preferred a priori.
+2. **Aligned with the mixer.** $X|+\rangle = |+\rangle$, so $|+\rangle^{\otimes n}$ is the maximum-eigenvalue eigenstate of $H_B = \sum_i X_i$ (eigenvalue $+n$). This makes the first mixer layer maximally effective.
+3. **Cheap to prepare.** A single layer of Hadamard gates on $|0\rangle^{\otimes n}$ — constant depth, no entangling gates.
+4. **Adiabatic starting point.** In the adiabatic interpretation of QAOA, we interpolate from $H_B$ (at $t = 0$) to $H_C$ (at $t = T$). The ground state of $H(0) = H_B$ is exactly $|+\rangle^{\otimes n}$ (in the convention $H_B = -\sum_i X_i$) or its maximum-eigenstate (as we use it). Either way it is the natural start.
 
-In the adiabatic limit ($p \to \infty$ with appropriately chosen parameters), $F_p$ can in principle approach the true MaxCut value; at finite $p$, performance depends on graph structure and the quality of parameter optimisation.
+### 5. Measurement and shots
 
-### 5. Initial State: Why $|+\rangle^{\otimes n}$
+After preparing $|\psi_p\rangle$, measuring in the computational basis yields bitstring $z$ with probability $|\langle z | \psi_p \rangle|^2$. Running $S$ independent **shots** gives an estimate
 
-The choice $|{+}\rangle^{\otimes n} = 2^{-n/2} \sum_{z \in \{0,1\}^n} |z\rangle$ is motivated by three considerations:
+$$\hat F_p = \frac{1}{S} \sum_{s=1}^{S} C(z^{(s)}) \xrightarrow{S \to \infty} F_p$$
 
-1. **Maximum-eigenvalue state of $H_B$:** Since $X|+\rangle = |+\rangle$, the state $|+\rangle^{\otimes n}$ is the maximum-eigenvalue eigenstate of $H_B = \sum_i X_i$ (eigenvalue $+n$), making the first mixer layer maximally effective. Note: we use the convention $H_B = \sum_i X_i$ throughout; some references use $-\sum_i X_i$, for which $|+\rangle^{\otimes n}$ would instead be the ground state.
-2. **Uniform superposition:** Every bitstring (i.e., every candidate cut) is assigned equal amplitude $2^{-n/2}$ at initialisation — no solution is preferred a priori.
-3. **Efficient preparation:** A single layer of Hadamard gates suffices: $H^{\otimes n}|0\rangle^{\otimes n} = |+\rangle^{\otimes n}$, adding zero circuit depth overhead.
-
-### 6. Measurement and the Shot Model
-
-After preparing $|\psi_p\rangle$, measuring in the computational basis yields bitstring $z$ with probability $|\langle z | \psi_p \rangle|^2$. Running $S$ independent shots gives empirical cut values $C(z^{(1)}), \ldots, C(z^{(S)})$, and the sample mean
-
-$$\hat{F}_p = \frac{1}{S} \sum_{s=1}^{S} C(z^{(s)}) \xrightarrow{S \to \infty} F_p$$
-
-by the law of large numbers. The standard deviation of $\hat{F}_p$ scales as $|E|/(2\sqrt{S})$ (a variance bound derived from the Ising structure), so estimating $F_p$ to precision $\varepsilon$ requires $S = O(|E|^2/\varepsilon^2)$ shots. This shot cost is a key component of the total computational budget.
+This is the **shot-noise** regime in which a real device operates. The estimator's standard error scales as $O(|E|/\sqrt S)$, so estimating $F_p$ to precision $\varepsilon$ costs $S = O(|E|^2 / \varepsilon^2)$ shots. Shot noise corrupts gradient estimates and is one of the main reasons a gradient-free optimiser like SPSA is preferred on hardware.
 
 ---
 
-## Part II — Classical Algorithms, Gate Decomposition, and Landscape Geometry
+## Part II — Circuits, classical baselines, and landscape
 
-### 1. Classical Baselines
+### 1. Gate decomposition: CNOT–$R_Z$–CNOT
 
-Three classical algorithms are implemented and compared numerically against QAOA:
+Each edge term $e^{i(\gamma/2) Z_i Z_j}$ in $U_C(\gamma)$ (up to a global phase) is implemented by
 
-**Random assignment** assigns each vertex to $S$ or $\bar{S}$ independently with probability $\frac{1}{2}$. For any edge $(i,j)$, $\Pr[z_i \neq z_j] = \frac{1}{2}$, so by linearity of expectation $\mathbb{E}[C] = |E|/2$, giving approximation ratio exactly $0.5$. This is a useful floor: any reasonable algorithm should surpass it.
+$$e^{i\frac{\gamma}{2} Z_i Z_j} = \text{CNOT}_{ij} \cdot (I \otimes R_Z(-\gamma))_j \cdot \text{CNOT}_{ij}$$
 
-**Greedy** processes vertices in sequence, assigning each vertex to the side that maximises cuts with already-placed neighbours. Single-pass greedy achieves ratio $\geq 0.5$ deterministically and runs in $O(|V| + |E|)$; multi-start greedy improves in practice. Crucially, a single greedy call is orders of magnitude cheaper than a single QAOA objective evaluation — any cost comparison must account for this asymmetry.
+The identity follows from the conjugation rule $\text{CNOT}(I \otimes Z)\text{CNOT} = Z \otimes Z$ — sandwiching a single-qubit $R_Z$ between two CNOTs promotes it to a two-qubit $ZZ$-rotation. Numerical verification against `scipy.linalg.expm` confirms the decomposition to machine precision.
 
-**Goemans–Williamson (GW)** relaxes the $\{-1, +1\}^n$ integer program to a semidefinite program by replacing scalars $s_i$ with unit vectors $v_i \in \mathbb{R}^n$:
+Resource cost per layer:
 
-$$\max \sum_{(i,j) \in E} \frac{1 - v_i \cdot v_j}{2}, \quad \|v_i\| = 1$$
+- $U_C$: $2|E|$ CNOTs and $|E|$ $R_Z$ gates.
+- $U_B$: $n$ single-qubit $R_X(2\beta)$ gates, no entangling gates.
 
-This SDP is polynomial-time solvable. After extracting the solution vectors, a random hyperplane through the origin partitions them into two sets; the expected cut value satisfies:
+For $C_{10}$, one layer is $20$ CX + $10$ $R_Z$ + $10$ $R_X$; depth $p$ scales these linearly.
 
-$$\mathbb{E}[C_{\text{GW}}] \geq \alpha_{\text{GW}} \cdot \text{MaxCut}(G), \quad \alpha_{\text{GW}} \approx 0.8786$$
+### 2. Classical benchmarks
 
-This guarantee is tight: assuming the Unique Games Conjecture, no polynomial-time algorithm achieves a ratio greater than $\alpha_{\text{GW}}$ (Khot et al. 2007).
+QAOA must compete against polynomial-time classical algorithms. We benchmark against three:
 
-![GW rounding guarantee](figures/gw_rounding.png)
-*Left: the GW rounding ratio $\frac{\theta_{ij}/\pi}{(1-\cos\theta_{ij})/2}$ as a function of angle $\theta_{ij}$, with minimum $\approx 0.8786$ at $133.6°$ — this is the worst-case angle and the source of the approximation constant. Right: GW on $C_{10}+3$ chords over 2000 random hyperplane roundings; all trials recover the optimal cut value 13.*
+**Greedy.** Visit vertices in some order; each vertex joins the side that cuts more of its already-assigned neighbours. Guaranteed ratio $\geq 0.5$. Runs in $O(|V| + |E|)$ — far cheaper than a single QAOA objective evaluation.
 
-### 2. Why GW Is Hard for QAOA to Beat
+**Greedy best-of-5.** Run greedy with 5 independent random orderings, keep the best cut. Still $O(|V| + |E|)$, but empirically much stronger than single-pass greedy.
 
-GW has two structural advantages over shallow QAOA:
+**Goemans–Williamson (GW).** Relax the integer program by replacing $s_i \in \{\pm 1\}$ with unit vectors $v_i \in \mathbb R^n$, solve the resulting semidefinite program, and round by a random hyperplane. Guaranteed ratio
 
-**Globality:** The SDP solution matrix encodes pairwise relationships among all $\binom{n}{2}$ vertex pairs simultaneously — GW "sees" the whole graph.
+$$\mathbb E[C_{\text{GW}}] \geq \alpha_{\text{GW}} \cdot C_{\max}, \qquad \alpha_{\text{GW}} \approx 0.8786$$
 
-**QAOA locality:** After $p$ layers, qubit $i$ has only interacted with qubits within graph distance $p$. Formally (Bravyi et al. 2021), QAOA at depth $p$ cannot distinguish two graphs that agree within radius $p$ of every vertex. For sparse, locally tree-like graphs, this locality limitation implies that QAOA at small $p$ cannot achieve the GW ratio.
+Runtime $O(n^{3.5})$ — the polynomial-time gold standard. Under the Unique Games Conjecture this bound is tight: no polynomial-time algorithm can do better on worst-case instances (Khot et al. 2007).
 
-This does not preclude QAOA from being competitive in other regimes — sufficiently dense graphs, high $p$, or graphs with special structure — but it sets the correct baseline for comparison.
+The unconditional NP-hardness bound $16/17 \approx 0.941$ (Håstad 2001) sits above GW — improving beyond $0.941$ is provably impossible in polynomial time unless $P = NP$, but the $0.941$–$0.8786$ gap is only conditionally closed.
 
-### 3. Gate Decomposition: CNOT–$R_Z$–CNOT
+### 3. Why GW is a hard ceiling for shallow QAOA
 
-Each edge term $e^{i(\gamma/2) Z_iZ_j}$ in $U_C(\gamma)$ is implemented via the identity:
+**Globality of GW.** The SDP solution captures pairwise information among all $\binom{n}{2}$ vertex pairs simultaneously; the hyperplane rounding is equally global.
 
-$$e^{i\frac{\gamma}{2} Z_i Z_j} = \mathrm{CNOT}_{ij}\cdot \bigl(I \otimes R_Z(-\gamma)\bigr)\cdot \mathrm{CNOT}_{ij}$$
+**Locality of shallow QAOA.** After $p$ layers, qubit $i$ has only interacted with qubits within graph distance $p$. Bravyi et al. (2021) formalise this: QAOA at depth $p$ cannot distinguish two graphs that agree within radius $p$ of every vertex. On sparse, locally tree-like graphs this is a meaningful obstruction — shallow QAOA cannot reach the GW ratio without $p$ growing with the graph.
 
-where $R_Z(\theta) = e^{-i(\theta/2)Z} = \mathrm{diag}(e^{-i\theta/2}, e^{i\theta/2})$.
+This is a known limitation. It does not preclude QAOA from being competitive on denser graphs, at larger $p$, or on graphs with special non-local structure exploited by the cost unitary.
 
-The derivation relies on the fact that $\mathrm{CNOT}$ maps $Z \otimes I \to Z \otimes Z$ under conjugation (i.e., $\mathrm{CNOT}(Z \otimes I)\mathrm{CNOT} = Z \otimes Z$), so conjugating $I \otimes R_Z$ by CNOT turns a single-qubit $Z$-rotation into a two-qubit $ZZ$-rotation. The notebook verifies numerically (to $< 10^{-14}$ error) that the circuit and the matrix exponential are identical for arbitrary $\gamma$.
+### 4. Barren plateaus
 
-This decomposition shows that each edge $(i,j)$ requires exactly 2 CNOT gates and 1 $R_Z$ gate per layer; the full cost unitary $U_C(\gamma)$ across all edges uses $2p|E|$ CNOT gates in total.
+For a sufficiently expressive ansatz on a $k$-local cost function (McClean et al. 2018), the gradient variance is bounded by $\mathrm{Var}[\partial_\theta F_p] \leq C/b^n$ with $b \geq 2$ — exponential decay in system size. When this holds, no polynomial number of shots can distinguish the gradient from zero, and gradient-based optimisation becomes exponentially hard. MaxCut at low depth is partially shielded by its 2-local structure, and noise compounds the flattening (Wang et al. 2021). Notebook 02 §5 contains the formal statement and a numerical demonstration on cycle graphs $n \in \{4, \ldots, 12\}$ — at our scale the decay is only $O(1/\mathrm{poly}(n))$.
 
-### 4. Barren Plateaus
+### 5. Numerical error sources (brief)
 
-A **barren plateau** is a region of parameter space where gradients vanish exponentially with system size. For a $k$-local cost function evaluated on a sufficiently expressive ansatz, McClean et al. (2018) show:
+Three distinct sources of error enter the numerical experiments:
 
-$$\mathbb{E}_{\boldsymbol{\theta}}\left[\frac{\partial F_p}{\partial \theta_k}\right] = 0, \qquad \mathrm{Var}\left[\frac{\partial F_p}{\partial \theta_k}\right] \leq \frac{C}{b^n}, \quad b \geq 2$$
-
-The variance decays *exponentially* in $n$ under these conditions, meaning that a gradient estimate obtained from any polynomial number of samples will be indistinguishable from zero. For sufficiently expressive, deep ansätze this renders gradient-based optimisation exponentially hard in system size.
-
-QAOA is partially protected from barren plateaus at low depth because $H_C = \sum_{(i,j)} \frac{I - Z_iZ_j}{2}$ is a sum of $k=2$-local terms, and locality limits how quickly the effective state approaches a Haar-random distribution. Nevertheless, gradient variance should still decrease with $n$; the notebooks demonstrate this numerically and note that reported variances must be normalised by $|E|$ to prevent artificial scaling artefacts.
-
-### 5. Numerical Error Sources
-
-The notebooks identify and quantify three distinct sources of error in statevector simulation:
-
-- **Floating-point error:** Statevector amplitudes are stored in double precision ($\varepsilon_\text{mach} \approx 2.2 \times 10^{-16}$). After $d$ gate applications, accumulated rounding error grows as $O(d \cdot \varepsilon_\text{mach})$ — negligible in practice for the circuit depths considered here.
-- **Shot noise:** The variance of a single-shot cut estimate is bounded by $|E|^2/4$, giving standard error $\sigma \leq |E|/(2\sqrt{S})$. Achieving $\sigma < 0.01$ for a 10-edge graph requires $S \gtrsim 250{,}000$ shots.
-- **Optimiser convergence error:** Gradient-free methods (COBYLA, Nelder-Mead) return approximate optima; the gap between $\hat{F}_p$ and the true $F_p^*$ depends on landscape ruggedness and budget.
+- **Floating-point error.** Statevectors are stored in double precision; after $d$ gates, rounding errors accumulate as $O(d \varepsilon_{\text{mach}})$ with $\varepsilon_{\text{mach}} \approx 2.2 \times 10^{-16}$. Negligible at the depths we run.
+- **Shot noise.** Finite-sample estimator of $F_p$ with standard error $O(|E|/\sqrt S)$. Relevant when Qiskit Aer is used with a finite shot count or on real hardware.
+- **Optimiser convergence error.** Any iterative solver returns an approximate optimum; for gradient-free methods the gap depends on landscape ruggedness and the evaluation budget.
 
 ---
 
@@ -165,11 +135,10 @@ numpy, scipy, matplotlib, networkx, qiskit, cvxpy
 
 ## References
 
-- Karp, R. *Reducibility among combinatorial problems.* 1972.
 - Farhi, Goldstone, Gutmann. *A quantum approximate optimization algorithm.* arXiv:1411.4028, 2014.
 - Goemans, Williamson. *Improved approximation algorithms for maximum cut and satisfiability problems using semidefinite programming.* JACM 42(6), 1995.
+- Håstad, J. *Some optimal inapproximability results.* JACM 48(4), 2001.
 - Khot et al. *Optimal inapproximability results for MAX-CUT and other 2-variable CSPs.* JACM 54(3), 2007.
 - McClean et al. *Barren plateaus in quantum neural network training landscapes.* Nature Commun. 9, 2018.
 - Wang et al. *Noise-induced barren plateaus in variational quantum algorithms.* Nature Commun. 12, 2021.
-- Cerezo et al. *Cost function dependent barren plateaus in shallow parametrized quantum circuits.* Nature Commun. 12, 2021.
 - Bravyi et al. *Obstacles to variational quantum optimization from symmetry protection.* arXiv:2110.14206, 2021.

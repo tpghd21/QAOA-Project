@@ -1,184 +1,183 @@
-# QAOA — Implementation Notebooks
+# Chapter 4 — Implementation: Circuit, Optimisation, Warm Start
 
-
-This folder contains two notebooks that sit between the theory foundations (Parts I–II) and the full experimental comparisons (Parts IV–V). Together they answer a single question in two stages: **does the circuit do what the theory says it does, and given that it does, how should its parameters be optimised?**
-
-Notebook 03 answers the first half on the smallest non-trivial instance ($C_4$): it derives the gate decomposition from first principles, traces the statevector step-by-step, and establishes the $p=1$ optimal parameters that will serve as a reference point throughout. Notebook 04 takes up where 03 leaves off — once the circuit is verified, the question becomes how to find good parameters reliably on larger graphs where the $p=1$ landscape intuition no longer transfers cleanly. The central finding from 04 is that **gradient correctness (per-edge parameter-shift formulation) is a more fundamental bottleneck than optimizer choice**: an incorrect gradient formula produces a wrong search direction regardless of which solver is used, while the choice among correct-gradient solvers is largely a matter of noise regime and budget.
-
----
-
-## Notebook Overview
+This folder covers the implementation chapter: the quantum circuit that realises the QAOA ansatz, the classical optimiser that tunes its parameters, the warm-start strategy that makes multi-layer optimisation tractable, and the explicit Qiskit circuit with shot-based measurements on $C_{10}$.
 
 | Notebook | Title | Role |
 |---|---|---|
-| `03_QAOA_C4_Complete_Analysis.ipynb` | C4 Complete Analysis — Gate-by-Gate Derivation | Circuit verification, statevector tracking, resource scaling |
-| `04_QAOA_Optimizer_Comparison.ipynb` | Optimization — Landscape, Barren Plateaus, and Optimizer Comparison | Gradient correctness, solver benchmarking, warm-start strategy |
+| `03_QAOA_C4_Complete_Analysis.ipynb` | $C_4$ Complete Analysis | Gate-by-gate verification on the smallest non-trivial instance |
+| `04_QAOA_Optimizer_Comparison.ipynb` | Optimiser Comparison and Warm Start | Landscape behaviour at $p \geq 2$, gradients, warm-start benefit |
+| `05_QAOA_QuantumCircuit.ipynb` | Quantum Circuit Construction and Measurement | Explicit Qiskit circuit on $C_{10}$ at $p = 1, 2, 3$; shot-based bitstring histograms |
 
 ---
 
-## 03 — C4 Complete Analysis
+## 1. Quantum circuit on $C_{10}$ — the ansatz
 
-### 1. C4 as a Controlled Testbed
+The ansatz is
 
-The 4-cycle $C_4 = (\{0,1,2,3\},\, \{(0,1),(1,2),(2,3),(3,0)\})$ is bipartite (partition $\{0,2\}$ vs $\{1,3\}$), so every edge crosses the cut and $C_{\max} = |E| = 4$. The two optimal bitstrings are $|0101\rangle$ and $|1010\rangle$. Because $C_4$ is small enough for exact statevector simulation but non-trivial enough to exhibit the full QAOA structure, it serves as the primary verification instance throughout the project.
+$$|\psi_p(\boldsymbol\gamma, \boldsymbol\beta)\rangle = U_B(\beta_p) U_C(\gamma_p) \cdots U_B(\beta_1) U_C(\gamma_1)\, |+\rangle^{\otimes 10}$$
 
-The cost Hamiltonian is:
+built from
 
-$$H_C = \frac{I - Z_0Z_1}{2} + \frac{I - Z_1Z_2}{2} + \frac{I - Z_2Z_3}{2} + \frac{I - Z_3Z_0}{2}$$
+1. **Initial state.** $|+\rangle^{\otimes 10} = H^{\otimes 10} |0\rangle^{\otimes 10}$ — one Hadamard per qubit.
+2. **$p$ alternating layers** of the **problem unitary** $U_C(\gamma_k)$ and the **mixer** $U_B(\beta_k)$.
 
-$H_C$ is diagonal in the computational basis; the $(z,z)$ entry equals $C(z)$.
+For $C_{10}$ the circuit has $n = 10$ qubits (one per vertex) and $2p$ variational parameters.
 
-### 2. Gate Decomposition: CNOT–$R_Z$–CNOT
+### 1.1 Problem unitary $U_C(\gamma)$
 
-Each edge term in $U_C(\gamma) = e^{-i\gamma H_C}$ requires implementing $e^{i(\gamma/2) Z_iZ_j}$. The identity used is:
+$$U_C(\gamma) = e^{-i\gamma H_C} = \prod_{(i, j) \in E} e^{-i\gamma (I - Z_i Z_j)/2}$$
 
-$$e^{i\frac{\gamma}{2} Z_iZ_j} = \mathrm{CNOT}_{i \to j} \cdot (I \otimes R_Z(-\gamma))_j \cdot \mathrm{CNOT}_{i \to j}$$
+Each edge factor decomposes (up to a global phase from the $I$ term) as a **CNOT–$R_Z(-\gamma)$–CNOT** block:
 
-The derivation follows from the conjugation rule $\mathrm{CNOT}(I \otimes Z)\mathrm{CNOT} = Z \otimes Z$: sandwiching an $R_Z$ on the target qubit between two CNOTs promotes it to a two-qubit $ZZ$-rotation. For edge $(0,1)$ the action on each basis state is explicit:
+$$e^{i\frac{\gamma}{2} Z_i Z_j} = \text{CNOT}_{ij} \cdot (I \otimes R_Z(-\gamma))_j \cdot \text{CNOT}_{ij}$$
 
-$$|00\rangle \to e^{+i\gamma/2}|00\rangle, \quad |01\rangle \to e^{-i\gamma/2}|01\rangle, \quad |10\rangle \to e^{-i\gamma/2}|10\rangle, \quad |11\rangle \to e^{+i\gamma/2}|11\rangle$$
+The identity follows from $\text{CNOT}(I \otimes Z)\text{CNOT} = Z \otimes Z$: the CNOT conjugation promotes a single-qubit $R_Z$ on the target qubit into a two-qubit $ZZ$-rotation. We verify it numerically on $C_4$ against `scipy.linalg.expm` to machine precision.
 
-This is verified numerically by comparing the circuit product against `scipy.linalg.expm(i·γ/2·Z⊗Z)`, with agreement to $< 10^{-14}$.
+**Cost per $U_C$ layer** on a graph with $|E|$ edges: $2|E|$ CNOTs and $|E|$ $R_Z$ gates. For $C_{10}$ that is $20$ CX + $10$ $R_Z$.
 
-### 3. Statevector Tracking at $p = 1$
+### 1.2 Mixer unitary $U_B(\beta)$
 
-The $p=1$ evolution is traced step by step.
+Because $H_B = \sum_k X_k$ is a sum of single-qubit terms and the $X_k$ commute,
 
-**Step 0** — Initialisation via Hadamard: $|\psi_0\rangle = |+\rangle^{\otimes 4} = \frac{1}{4}\sum_{z \in \{0,1\}^4} |z\rangle$.
+$$U_B(\beta) = e^{-i\beta H_B} = \bigotimes_{k=0}^{n-1} R_X(2\beta)_k$$
 
-**Step 1** — Cost unitary: each basis state acquires a phase proportional to its cut value,
-$$U_C(\gamma)|\psi_0\rangle = \frac{1}{4}\sum_z e^{-i\gamma C(z)}|z\rangle$$
-This is phase separation; it does not change any probability $|\langle z|\psi\rangle|^2$ on its own.
+The mixer is a **product of $n$ independent single-qubit rotations** — no entangling gates. This is important for two reasons: it doesn't add CX error (relevant in Chapter 5), and it keeps the mixer cheap even as $n$ grows.
 
-**Step 2** — Mixer unitary: $U_B(\beta) = \bigotimes_{k=0}^{3} R_X(2\beta)_k$ rotates each qubit's Bloch sphere, coupling amplitudes across Hamming-1 neighbours. The redistribution of probability mass toward high-cut bitstrings results from the interference between Steps 1 and 2.
+### 1.3 $C_4$ as a controlled testbed
 
-![Statevector evolution at p=1](figures/statevector_tracking.png)
-*Amplitude magnitudes at each step for $C_4$, $\gamma^*=\pi/4$, $\beta^*=\pi/8$. Step 0: uniform superposition — all 16 bitstrings equal. Step 1: $U_C$ imprints phases; probabilities are unchanged. Step 2: $U_B$ couples amplitudes via interference; the two max-cut bitstrings $|0101\rangle$ and $|1010\rangle$ dominate.*
+Notebook 03 traces the $p = 1$ evolution on $C_4$ step by step at the known optimum $\gamma^* = \pi/4$, $\beta^* = \pi/8$:
 
-### 4. Optimal Parameters at $p = 1$
+- **Step 0 (initial).** Uniform superposition: all 16 amplitudes equal to $1/4$.
+- **Step 1 ($U_C$).** Phases are imprinted according to $C(z)$; probabilities do **not** change yet.
+- **Step 2 ($U_B$).** Interference redistributes amplitudes; the two MaxCut bitstrings $|0101\rangle$ and $|1010\rangle$ dominate the resulting distribution.
 
-For $C_4$ the $p=1$ landscape $F_1(\gamma,\beta)$ can be computed analytically. The numerical optimum is at $\gamma^* = \pi/4$, $\beta^* = \pi/8$.
+This is the cleanest single-instance demonstration that phase separation by $U_C$ plus amplitude mixing by $U_B$ concentrates probability on high-cut bitstrings. On larger graphs the mechanism is the same — the phases are more complex and require optimisation rather than closed-form parameters.
 
-The intuition for $\gamma^* = \pi/4$: max-cut states ($C = 4$) acquire phase $e^{-i\pi} = -1$ while zero-cut states ($C = 0$) stay at $+1$. This maximises the phase contrast between the two extremes before the mixer acts. The intuition for $\beta^* = \pi/8$: the mixer angle $R_X(\pi/4)$ is the sweet spot between under-rotation (no amplitude transfer) and over-rotation (mixing away from the desired basin).
+### 1.4 Explicit Qiskit construction and shot-based measurement on $C_{10}$ (Notebook 05)
 
-At these parameters the two max-cut bitstrings together receive the majority of the total probability.
+Notebook 05 takes the optimal $(\gamma, \beta)$ found in Notebook 04 and writes out the explicit Qiskit circuit at $p = 1, 2, 3$:
 
-![C4 p=1 landscape and optimal distribution](figures/landscape_and_distribution.png)
-*Left: $F_1(\gamma,\beta)$ landscape for $C_4$ — global maximum at $\gamma^*=\pi/4$, $\beta^*=\pi/8$ (marked $\star$). Right: measurement probability distribution at the optimal parameters; $|0101\rangle$ and $|1010\rangle$ (red) together account for the majority of the total probability.*
+- **Initial layer.** A Hadamard on every qubit prepares $|+\rangle^{\otimes 10}$.
+- **Per layer.** $U_C(\gamma_k)$ as the product of 10 CNOT–$R_Z(-\gamma_k)$–CNOT blocks (one per edge of $C_{10}$, 20 CX + 10 $R_Z$), followed by $U_B(\beta_k)$ as 10 single-qubit $R_X(2\beta_k)$ rotations.
+- **Final.** Measurement of all qubits in the computational basis.
 
-### 5. Scaling to $p = 2, 3$
-
-For $p > 1$ the landscape is a non-convex multivariate trigonometric polynomial in $2p$ parameters. The notebook optimises with multi-start COBYLA (20 random initialisations per depth) and reports $F_p$ and the corresponding probability distributions.
-
-### 6. Resource Analysis
-
-For $C_4$ ($|E| = 4$, $n = 4$), the gate counts per depth $p$ are:
-
-| $p$ | Parameters | CX gates | $R_Z$ gates | $R_X$ gates |
-|-----|-----------|----------|-------------|-------------|
-| 1   | 2         | 8        | 4           | 4           |
-| 2   | 4         | 16       | 8           | 8           |
-| 3   | 6         | 24       | 12          | 12          |
-
-The general formula is CX count $= 2p|E|$, which is $8p$ for $C_4$. In serial execution, circuit depth scales as $O(p|E|)$. Since $C_4$ has chromatic index 2 (two edge colours suffice to partition all edges into independent sets), all 4 edges can be executed in 2 parallel groups per layer, reducing circuit depth to $O(2p)$.
-
-The $C_4$ analysis establishes what QAOA does correctly on a tractable instance. What it does not establish is how to find good parameters when the landscape is no longer well-behaved enough for any random initialisation to succeed. On $C_4$ at $p=1$, COBYLA converges reliably from any starting point; this breaks down already at $C_{10}$, $p=2$. Notebook 04 diagnoses why and prescribes fixes.
+Each circuit is transpiled at `optimization_level=1` and run on `AerSimulator` with $8192$ shots. The bitstring histograms show the predicted concentration on the two MaxCut configurations $|0101010101\rangle$ and $|1010101010\rangle$ (cut value $10$), with $p = 3$ peaking far more sharply than $p = 1$. The complementary pair $\{z, \bar z\}$ appears with nearly equal probability — a consequence of the $\mathbb{Z}_2$ symmetry of MaxCut ($C(z) = C(\bar z)$).
 
 ---
 
-## 04 — Optimizer Comparison
+## 2. Optimisation as a hybrid loop
 
-### 1. Landscape Geometry
+QAOA is a **classical–quantum hybrid** algorithm. Each iteration:
 
-The QAOA objective $F_p : \mathbb{R}^{2p} \to \mathbb{R}$ is a multivariate trigonometric polynomial whose structure is inherited from the circuit. Key properties:
+1. **Prepare** $|\psi_p(\gamma, \beta)\rangle$ on the quantum processor.
+2. **Measure** $F_p = \langle H_C \rangle$ by sampling in the computational basis (on hardware) or exactly (in statevector simulation).
+3. **Update** $(\gamma, \beta)$ on the classical side using $F_p$ (and, if available, its gradient).
+4. **Repeat** until $|\Delta F_p| < \varepsilon$.
 
-- **Periodicity:** $e^{i\gamma Z_iZ_j/2}$ is $2\pi$-periodic in $\gamma$; by symmetry it suffices to search $\gamma_k \in [0, \pi]$, $\beta_k \in [0, \pi/2]$.
-- **Non-convexity:** Multiple local optima exist for $p \geq 2$; their number grows with $p$.
-- **Shot noise:** On hardware, $F_p$ is estimated from $S$ shots; the resulting noise $O(1/\sqrt{S})$ corrupts gradient estimates and destabilises gradient-based methods unless step sizes are carefully tuned.
+Only scalar cost values — not the full state — flow from the quantum processor to the classical optimiser. Gradients, when used, are built from **parameter-shift evaluations**: additional quantum evaluations of $F_p$ at shifted parameter values. No classical simulation of the quantum circuit is required.
 
-### 2. Barren Plateaus
+### 2.1 Choosing the classical optimiser
 
-A **barren plateau** is a parameter region where the gradient is exponentially small in system size. For a $k$-local cost function evaluated on a sufficiently expressive ansatz (McClean et al. 2018):
+Four practical choices:
 
-$$\mathbb{E}_{\boldsymbol{\theta}}\!\left[\frac{\partial F_p}{\partial \theta_k}\right] = 0, \qquad \mathrm{Var}\!\left[\frac{\partial F_p}{\partial \theta_k}\right] \leq \frac{C}{b^n}, \quad b \geq 2$$
-
-The notebook measures gradient variance (normalised by $|E|$ to remove trivial graph-size scaling) at 300 random initialisations for $n \in \{4, 6, 8, 10, 12\}$ at $p=1$. The system sizes tested are too small to observe clear asymptotic decay; the empirical variance does not show a clean monotone trend over this range, which is consistent with the theoretical bound only being tight in the large-$n$ limit.
-
-Gradient-free optimisers are not immune. In flat regions, COBYLA's linear model becomes degenerate when function values at simplex vertices differ by less than floating-point resolution; Nelder-Mead's simplex collapses when all vertices have similar values; SPSA's step sizes must be calibrated to the gradient scale or the signal is buried in perturbation noise.
-
-QAOA at low depth on a 2-local cost function is partially shielded from the worst barren plateau behaviour — the locality of $H_C$ prevents rapid convergence to a Haar-random distribution — but the variance nonetheless decreases with system size and gradient-based optimisation becomes progressively harder.
-
-### 3. Parameter-Shift Rule: Correct Per-Gate Formulation
-
-For any gate $e^{-i\theta G}$ where $G$ has eigenvalues $\pm r$, the expectation value $F(\theta)$ is exactly sinusoidal and the gradient is:
-
-$$\frac{\partial F}{\partial \theta} = r\!\left[F\!\left(\theta + \frac{\pi}{4r}\right) - F\!\left(\theta - \frac{\pi}{4r}\right)\right]$$
-
-This is an **exact** identity, not a finite-difference approximation, and requires no step-size tuning.
-
-For QAOA the two gate families have distinct generators and hence distinct shift angles:
-
-**Mixer gates** $R_X(2\beta)_k = e^{-i\beta X_k}$: generator $X_k$, eigenvalues $\pm 1$, shift $= \pi/2$ in $\beta$.
-
-**Cost gates** $e^{i(\gamma/2)Z_iZ_j}$: each edge contributes an independent gate. The correct gradient with respect to a shared global $\gamma$ is obtained by summing per-edge shifts:
-
-$$\frac{\partial F_p}{\partial \gamma_\ell} = \frac{1}{2} \sum_{(i,j) \in E} \left[F_p(\ldots,\, \gamma_\ell^{(ij)} + \tfrac{\pi}{2},\, \ldots) - F_p(\ldots,\, \gamma_\ell^{(ij)} - \tfrac{\pi}{2},\, \ldots)\right]$$
-
-where $\gamma_\ell^{(ij)}$ denotes shifting only the parameter of the gate associated with edge $(i,j)$ in layer $\ell$.
-
-A common error is to shift the global $\gamma$ by $\pi/2$ simultaneously across all edges. The notebook verifies numerically that this gives an incorrect gradient and that the per-edge formulation matches finite differences to high precision.
-
-### 4. Optimizer Catalogue
-
-| Optimizer | Gradient required | Recommended setting | Known failure mode |
+| Optimiser | Gradient | Cost/step | Best for |
 |---|---|---|---|
-| **COBYLA** | No | Noiseless / low-noise sim, $p \leq 5$ | Stagnates when landscape is flat at large $n$ |
-| **Nelder-Mead** | No | Fallback when COBYLA stagnates | Slow; simplex collapses in flat regions |
-| **L-BFGS-B** | Yes (param-shift) | Noiseless statevector sim | Unreliable on shot-noisy hardware |
-| **SPSA** | No (2 circuits/step) | Real hardware, large $p$ | Requires hand-tuning of $a_k$, $c_k$ to gradient scale |
+| **COBYLA** | None (trust region) | $O(p)$ | Shot-noise robust; gradient-free baseline |
+| **L-BFGS-B** | Per-edge parameter-shift | $2(|E| + n) p$ | Noiseless statevector; exact gradient |
+| **Nelder–Mead** | None (simplex) | $O(p)$ | Fallback when COBYLA stagnates |
+| **SPSA** | Stochastic 2-evaluation | $2$ | Real hardware; shot-noisy regime |
 
-### 5. Convergence Comparison on $C_{10}$, $p=2$
+Our primary choice is **L-BFGS-B** (fast convergence on noiseless statevector via the exact per-edge parameter-shift gradient), run in parallel with **COBYLA** (gradient-free cross-check). Two independent optimisers agreeing on the same minimum rules out solver-specific artefacts. On hardware, SPSA would replace both.
 
-All four optimisers are benchmarked on the 10-cycle $C_{10}$ at $p=2$ with 30 random initialisations each. Results are reported as approximation ratios relative to $C_{\max} = 10$, with the Goemans–Williamson bound $\alpha_{\text{GW}} \approx 0.8786$ shown as the classical reference.
+### 2.2 Parameter-shift rule — the subtle part
 
-The comparison illustrates that on a moderately sized, noiseless statevector simulation, COBYLA and L-BFGS-B are competitive in solution quality while SPSA shows higher variance due to stochastic perturbations. The critical difference between $C_4$ and $C_{10}$ is visible in convergence curves: $C_4$ converges reliably from any random initialisation, while $C_{10}$ already shows meaningful spread, motivating the warm-start strategy below.
+For a gate $e^{-i\theta G}$ whose generator $G$ has eigenvalues $\pm r$, the expectation value $F(\theta)$ is an exact sinusoid in $\theta$ and the gradient is
 
-![Optimizer comparison on C10](figures/optimizer_comparison.png)
-*Left: approximation ratio distribution across 30 random initialisations per optimizer on $C_{10}$, $p=2$ (box plot). Dashed lines: GW bound (0.8786) and exact optimum (1.0). COBYLA and L-BFGS-B achieve comparable median quality; SPSA shows higher spread. Right: convergence trajectories per optimizer.*
+$$\frac{\partial F}{\partial \theta} = r \left[ F\!\left(\theta + \tfrac{\pi}{4 r}\right) - F\!\left(\theta - \tfrac{\pi}{4 r}\right) \right]$$
 
-### 6. Warm-Start: Layer-by-Layer Initialisation
+This is an **exact identity**, not a finite-difference approximation. For QAOA:
 
-The layer-by-layer strategy (Zhou et al. 2020) reduces sensitivity to random initialisation:
+- **Mixer rotations** $R_X(2\beta) = e^{-i\beta X}$ have generator $X$, eigenvalues $\pm 1$, shift $\pi/2$ in $\beta$.
+- **Cost rotations** $e^{i(\gamma/2) Z_i Z_j}$ have generator $Z_i Z_j$, eigenvalues $\pm 1$, shift $\pi/2$ per edge.
 
-1. Optimise $p=1$ with multiple random starts (2 parameters — cheap).
-2. Initialise $p=2$ parameters as $(\gamma_1^*, \gamma_1^*,\, \beta_1^*, \beta_1^*)$ with small Gaussian noise.
-3. Optimise $p=2$. Repeat inductively for $p=3, 4, \ldots$
+**Important:** $\gamma_\ell$ is a *shared* parameter across all edges in layer $\ell$. The correct gradient sums the per-edge shifts:
 
-The mechanism: the $p=2$ landscape restricted to the subspace $\gamma_1 = \gamma_2$, $\beta_1 = \beta_2$ is exactly the $p=1$ landscape, so the $p=1$ optimum is a feasible starting point with non-negligible gradients. This is demonstrated on $C_{10}$ augmented with 3 chords ($|E| = 13$, $C_{\max} = 13$, $p=3$), where warm-start consistently outperforms random initialisation in both median ratio and variance. No general theoretical guarantee for warm-start exists; the empirical benefit is graph- and depth-dependent.
+$$\frac{\partial F_p}{\partial \gamma_\ell} = \frac{1}{2} \sum_{(i, j) \in E} \left[ F_p(\ldots, \gamma_\ell^{(ij)} + \tfrac{\pi}{2}, \ldots) - F_p(\ldots, \gamma_\ell^{(ij)} - \tfrac{\pi}{2}, \ldots) \right]$$
 
-![Warm-start vs random initialisation](figures/warmstart_comparison.png)
-*Approximation ratio distribution on $C_{10}+3$ chords, $p=3$: warm-start (orange) vs random initialisation (blue) over 60 trials. Warm-start achieves higher median ratio and lower variance. Dashed line: GW bound (0.8786).*
+A common mistake is to shift the single shared $\gamma_\ell$ by $\pi/2$ across all edges at once — this gives an incorrect gradient. Notebook 04 checks the correct formulation against finite differences and finds agreement to high precision. Per-edge parameter-shift correctness is a **prerequisite** for any optimiser comparison; the wrong formula produces a wrong search direction regardless of which solver is used downstream.
 
-### 7. Practical Guidelines
+### 2.3 Shot noise
 
-| Setting | Optimizer | Initialisation |
-|---|---|---|
-| Statevector simulation (noiseless) | L-BFGS-B + per-edge param-shift | Warm-start |
-| Shot-based simulation ($S \geq 500$) | COBYLA | Warm-start |
-| Real hardware | SPSA (calibrated $a_k$, $c_k$) | Warm-start |
-| Large $p$ (barren plateau regime) | SPSA + layer-by-layer | Inductively from $p=1$ |
+On real hardware, $F_p$ is estimated from $S$ shots with standard error $O(|E|/\sqrt S)$. This corrupts gradient estimates for gradient-based solvers (L-BFGS-B becomes unreliable below a few hundred shots) and motivates gradient-free or stochastic-gradient methods (COBYLA, SPSA) for hardware experiments. In the notebooks we use statevector simulation, so shot noise is not a limiting factor here — but it is a key reason the recommended optimiser changes between simulation and hardware.
 
 ---
 
-## Key Findings
+## 3. Landscape geometry and barren plateaus
 
-These two notebooks collectively establish three claims that carry forward into the experiment notebooks:
+The QAOA objective $F_p : \mathbb R^{2p} \to \mathbb R$ is a multivariate trigonometric polynomial. Key properties:
 
-**1. The CNOT–$R_Z$–CNOT decomposition is exact.** The circuit product matches `expm(i·γ/2·Z⊗Z)` to $< 10^{-14}$, and the explicit basis-state action confirms that $U_C(\gamma)$ performs phase separation — not amplitude reshaping — on its own.
+- **Periodicity.** Each $\gamma_k$ and $\beta_k$ has a bounded fundamental domain (typically $\gamma_k \in [0, \pi]$, $\beta_k \in [0, \pi/2]$).
+- **Non-convexity.** Multiple local optima appear from $p \geq 2$ onward; their number grows with $p$.
+- **Gradients shrink with system size.** At fixed $p$, the variance of $\partial F_p / \partial \theta_k$ decreases as $n$ increases.
 
-**2. Per-edge parameter-shift correctness is a prerequisite, not an optimisation detail.** Shifting the global $\gamma$ by $\pi/2$ simultaneously across all edges produces a gradient that is numerically wrong (verified against finite differences on $C_4$). This error propagates independently of which optimiser is used downstream. Fixing the gradient formula is therefore more fundamental than any solver choice.
+### Barren plateaus
 
-**3. Warm-start dominates random initialisation for $p \geq 2$ on non-trivial graphs.** On $C_{10}$ augmented with 3 chords at $p=3$, warm-start consistently achieves higher median approximation ratio and lower variance than random initialisation. The mechanism is structural: the $p=1$ optimum is a feasible starting point for $p=2$ with non-negligible gradients. This benefit is empirical and graph-dependent; no general guarantee exists.
+Gradient variance can decay exponentially with $n$ on highly expressive ansätze (McClean et al. 2018), making gradient-based optimisation infeasible at large system sizes. The mathematical statement and a numerical demonstration on cycle graphs $n \in \{4, \ldots, 12\}$ live in [Theory/02 §5](../Theory/02_QAOA_Theory_Part2_Circuits_and_Landscape.ipynb). At our scale ($n \le 12$, $p \le 3$) the variance drops only as $O(1/\mathrm{poly}(n))$ and gradients are well within the trainable regime — barren plateaus are not the bottleneck for any of the optimiser comparisons in Notebook 04.
+
+---
+
+## 4. Warm start (Zhou et al. 2020)
+
+Random-restart optimisation wastes evaluations exploring distant local maxima. A cheaper alternative, used throughout Chapter 5, is **layer-by-layer warm start**.
+
+### Intuition
+
+A $p$-layer optimum $(\gamma^*_{p}, \beta^*_{p})$ is already a good neighbourhood for $(p + 1)$ layers — adding one more layer with small $\gamma, \beta$ is nearly the identity and does not move the state far. Random restarts at $p = 3$ therefore waste evaluations on distant basins.
+
+### Algorithm
+
+1. Optimise $p = 1$ globally (several random restarts, cheap — only 2 parameters).
+2. For $k = 2, 3, \ldots, p$:
+   - Initialise $\theta_0 \gets (\gamma^*_{k-1}, \gamma^*_{k-1}[-1]) \| (\beta^*_{k-1}, \beta^*_{k-1}[-1]) + \eta$ (duplicate the last layer plus a small Gaussian perturbation $\eta$).
+   - Locally optimise $F_k$ from $\theta_0$.
+3. Return the final $(\gamma^*, \beta^*)$.
+
+### Empirical benefit
+
+On $C_{10} + 3$ chords at $p = 3$ over 20 trials:
+
+- **Random initialisation:** COBYLA mean ratio $0.828$ (std $0.083$); L-BFGS-B mean $0.766$ (std $0.126$).
+- **Warm start:** both optimisers reach $0.872$ with std $\approx 0$.
+
+Warm start reduces both mean bias and variance — random restarts at $p = 3$ frequently get stuck in suboptimal basins that warm start avoids. There is no general theoretical guarantee; the benefit is empirical and graph-dependent.
+
+![Warm start vs random initialisation](figures/warmstart_comparison.png)
+
+*COBYLA and L-BFGS-B approximation ratio distributions on $C_{10} + 3$ chords, $p = 3$, 20 trials each. Warm start (green) collapses onto the GW bound; random initialisation (pink) is spread widely. Same conclusion for both optimisers.*
+
+---
+
+## 5. Resource summary
+
+| Graph | $p$ | Parameters | CX gates | $R_Z$ gates | $R_X$ gates |
+|---|---|---|---|---|---|
+| $C_4$ | 1 | 2 | 8 | 4 | 4 |
+| $C_4$ | 2 | 4 | 16 | 8 | 8 |
+| $C_4$ | 3 | 6 | 24 | 12 | 12 |
+| $C_{10}$ | 1 | 2 | 20 | 10 | 10 |
+| $C_{10}$ | 3 | 6 | 60 | 30 | 30 |
+
+General rule: depth $p$, graph with $|E|$ edges and $n$ vertices — $2p|E|$ CX, $p|E|$ $R_Z$, $pn$ $R_X$, $2p$ parameters.
+
+---
+
+## Key takeaways
+
+1. **CNOT–$R_Z$–CNOT decomposition is exact.** Each $e^{i(\gamma/2) Z_i Z_j}$ is implemented with 2 CNOTs and 1 $R_Z$, with no approximation.
+2. **Per-edge parameter-shift correctness is a prerequisite**, not a detail. A single global $\gamma$ shift gives an incorrect gradient; the correct gradient sums per-edge shifts.
+3. **Optimiser choice trades convergence speed for robustness.** L-BFGS-B with per-edge parameter-shift gradients converges fastest on noiseless statevector but degrades sharply once shot noise or landscape flattening corrupts gradient estimates; COBYLA (and SPSA on hardware) accept slower convergence in exchange for surviving those regimes. The right pair for noiseless simulation is L-BFGS-B + COBYLA (exact gradient + gradient-free cross-check); SPSA is the practical choice on hardware.
+4. **Warm start dominates random initialisation** at $p \geq 2$ on non-trivial graphs. On $C_{10} + 3$ chords at $p = 3$ it reduces variance effectively to zero.
+5. **Barren plateaus and shot noise** are real but are not the primary obstacles at the small $n$ and low $p$ we operate in.
 
 ---
 
@@ -193,7 +192,7 @@ numpy, scipy, matplotlib, networkx, qiskit, qiskit-aer
 ## References
 
 - Farhi, Goldstone, Gutmann. *A quantum approximate optimization algorithm.* arXiv:1411.4028, 2014.
+- Zhou et al. *Quantum approximate optimization algorithm: Performance, mechanism, and implementation on near-term devices.* Phys. Rev. X 10, 2020.
 - McClean et al. *Barren plateaus in quantum neural network training landscapes.* Nature Commun. 9, 2018.
 - Cerezo et al. *Cost function dependent barren plateaus in shallow parametrized quantum circuits.* Nature Commun. 12, 2021.
-- Zhou et al. *Quantum approximate optimization algorithm: Performance, mechanism, and implementation on near-term devices.* Phys. Rev. X 10, 2020.
 - Bravyi et al. *Obstacles to variational quantum optimization from symmetry protection.* arXiv:2110.14206, 2021.
