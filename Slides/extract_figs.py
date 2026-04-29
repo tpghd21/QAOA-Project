@@ -35,4 +35,7 @@ crop(7, (0.05, 0.27, 0.49, 0.92), "portfolio_solved.png")
 # Page 7 investor results table (right side, tighter)
 crop(7, (0.51, 0.27, 0.97, 0.92), "portfolio_table.png")
 
+# Page 26: 3-regular measurement histogram (left side, full plot)
+crop(26, (0.04, 0.20, 0.66, 0.95), "3reg_hist.png")
+
 print("done")

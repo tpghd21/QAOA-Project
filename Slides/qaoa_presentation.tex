@@ -72,7 +72,7 @@
 
 % ----- Title --------------------------------------------------
 \title{QAOA for MaxCut}
-\subtitle{Quantum Approximate Optimization on near-term hardware}
+\subtitle{The Quantum Approximate Optimization Algorithm}
 \author{Sehong Park}
 \institute{Physics 565 / 656 \ \textperiodcentered\  Spring 2026}
 \date{}
@@ -158,41 +158,6 @@
 \section{Motivation}
 % ============================================================
 
-% --- QUBO first: concrete MaxCut derivation -------------------
-\begin{frame}{QUBO and why MaxCut is a special case}
-  \framesubtitle{Quadratic Unconstrained Binary Optimisation}
-  \textbf{General QUBO.} Optimise
-  \[
-    f(\bm x) \;=\; \sum_{i} Q_{ii}\,x_i \;+\; \sum_{i<j} Q_{ij}\,x_i x_j,
-    \qquad x_i\in\{0,1\}.
-  \]
-
-  \vspace{-0.4em}
-  \textbf{Encoding MaxCut as QUBO.}\ \ Let $x_i = 1$ iff vertex
-  $i \in S$. An edge $(i,j)$ is cut iff exactly one endpoint is in $S$:
-  \[
-    \mathbf{1}[\text{cut}_{ij}]
-      \;=\; x_i(1-x_j) + (1-x_i)x_j
-      \;=\; x_i + x_j - 2\,x_i x_j.
-  \]
-  \vspace{-1.0em}
-  \[
-    C(\bm x) \;=\; \sum_{(i,j)\in E}\bigl(x_i + x_j - 2\,x_i x_j\bigr)
-              \;=\; \sum_i \deg(i)\,x_i \;-\; 2\!\!\sum_{(i,j)\in E}\!\! x_i x_j.
-  \]
-
-  \vspace{-0.3em}
-  \begin{block}{So MaxCut is QUBO with}
-    $Q_{ii} = \deg(i)$,\quad
-    $Q_{ij} = -2$ if $(i,j)\in E$,\quad $0$ otherwise.
-  \end{block}
-
-  \vspace{-0.3em}
-  \footnotesize Same recipe encodes job scheduling, VLSI layout,
-  Ising ground states, traffic flow, \ldots\ — every QUBO is essentially
-  a (weighted) cut problem.
-\end{frame}
-
 % --- Portfolio Slide 1: setup --------------------------------
 \begin{frame}{A worked example: portfolio diversification (1/2)}
   \framesubtitle{From financial intuition to a graph}
@@ -242,17 +207,11 @@
 
     \column{0.48\textwidth}
       \footnotesize
-      \textbf{Why MaxCut works here.}\\
-      Each \emph{cut edge} separates a correlated pair into different
-      groups. Maximising the cut $=$ separating as many correlated pairs
-      as possible $=$ minimising correlation \emph{inside} each group.
-
-      \vspace{0.5em}
       \textbf{Result on the 8-asset example.}\\
       Group $S$ = \{AAPL, MSFT, JPM, XOM\},\\
-      Group $\Sbar$ = \{GOOGL, META, GS, CVX\}.
+      Group $\Sbar$ = \{GOOGL, META, GS, CVX\}.\\
       Each group contains one asset from every sector --- automatic
-      sector diversification, without the investor specifying sectors.
+      sector diversification.
 
       \vspace{0.5em}
       \begin{tabular}{lc}
@@ -266,6 +225,12 @@
 
       \vspace{0.4em}
       \alert{$\sim\!4\times$ less correlated} inside each group.
+
+      \vspace{0.4em}
+      {\scriptsize\itshape\color{NavyDeep!70}
+       Stylised: we threshold at $|\rho|>0.25$ and ignore expected
+       returns and budget constraints --- the point is that
+       ``diversification'' maps onto a cut.}
   \end{columns}
 \end{frame}
 
@@ -320,7 +285,7 @@
 
   \vspace{0.4em}
   \centering
-  \includegraphics[width=0.85\linewidth]{../Theory/figures/c4_maxcut.png}\\[2pt]
+  \includegraphics[width=\linewidth,height=0.62\textheight,keepaspectratio]{../Theory/figures/c4_maxcut.png}\\[2pt]
   {\footnotesize\itshape Goal: maximise the probability of sampling
    $\ket{1010}$ or $\ket{0101}$ --- the two MaxCut solutions of $C_4$.}
 \end{frame}
@@ -436,10 +401,6 @@
         \item Receive new $(\bm\gamma,\bm\beta)$, repeat until converged.
       \end{enumerate}
 
-      \vspace{0.4em}
-      Only \emph{cost values} (and optionally parameter-shift gradients)
-      flow back --- the quantum state never leaves the QPU.
-
     \column{0.42\textwidth}
       \begin{tikzpicture}[
           node distance=8mm and 6mm,
@@ -455,6 +416,78 @@
         \draw[ar] (C.west) .. controls +(-1.3,0) and +(-1.3,0)
             .. node[left,font=\scriptsize]{new $(\bm\gamma,\bm\beta)$} (Q.west);
       \end{tikzpicture}
+  \end{columns}
+\end{frame}
+
+% --- C_4 explicit circuit -------------------------------------
+\begin{frame}{Explicit circuit: $C_4$, depth $p=1$}
+  \framesubtitle{The QAOA ansatz drawn out gate by gate}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.22\textwidth}
+      \centering
+      \vspace{0.6em}
+      \begin{tikzpicture}[scale=0.7,
+          v/.style={circle,draw=NavyDeep,fill=NavyDeep,
+                    text=Cream,inner sep=1pt,minimum size=6mm,
+                    font=\scriptsize\bfseries}]
+        \node[v] (1) at ( 0, 1.2)  {1};
+        \node[v] (2) at (-1.2, 0)  {2};
+        \node[v] (0) at ( 1.2, 0)  {0};
+        \node[v] (3) at ( 0,-1.2)  {3};
+        \draw[NavyDeep,thick] (0)--(1)--(2)--(3)--(0);
+      \end{tikzpicture}\\[2pt]
+      {\footnotesize $C_4$ : 4 vertices,\\4 edges}\\[6pt]
+      {\scriptsize $\gamma = 0.79,\ \beta = 0.39$}
+
+    \column{0.76\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{figs_from_pdf/c4_qaoa_circuit.png}
+  \end{columns}
+
+  \vspace{0.4em}
+  \footnotesize
+  Reading left $\rightarrow$ right: \textbf{(1)} $H^{\otimes 4}$ to
+  prepare $\ket{+}^{\otimes 4}$,
+  \;\textbf{(2)} four cost blocks $\UC(\gamma)$, one per edge,
+  \;\textbf{(3)} four single-qubit $R_X(2\beta)$ gates as the mixer
+  $\UB(\beta)$.
+\end{frame}
+
+% --- Why the circuit matches the ansatz -----------------------
+\begin{frame}{How the circuit realises the ansatz}
+  \framesubtitle{Per-edge $ZZ$ rotation and per-qubit $X$ rotation}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.5\textwidth}
+      \textbf{Cost unitary, edge by edge:}
+      \[
+        \UC(\gamma) = \!\!\prod_{(i,j)\in E}\!\! e^{-i\gamma(I-Z_iZ_j)/2}
+      \]
+      Drop the global phase $e^{-i\gamma/2}$ per term:
+      \[
+        e^{-i\gamma(I-Z_iZ_j)/2} \;\propto\; e^{+i\gamma\,Z_iZ_j/2}.
+      \]
+      Standard identity:
+      \[
+        e^{i\gamma Z_iZ_j/2}
+        \;=\; \mathrm{CX}_{ij}\cdot R_Z(-\gamma)_j\cdot \mathrm{CX}_{ij}.
+      \]
+      One CX--$R_Z$--CX block per edge.
+
+    \column{0.5\textwidth}
+      \textbf{Mixer unitary, qubit by qubit:}
+      \[
+        \UB(\beta) \;=\; e^{-i\beta \sum_k X_k}
+                   \;=\; \prod_{k} R_X(2\beta)_k.
+      \]
+      One $R_X(2\beta)$ per qubit --- no entangling gates.
+
+      \vspace{0.8em}
+      \textbf{Gate count for $C_4$, $p=1$:}
+      \begin{itemize}\setlength{\itemsep}{1pt}
+        \item $|E|=4$ edges $\Rightarrow$ 4 cost blocks
+              (8 CX, 4 $R_Z$).
+        \item $n=4$ qubits $\Rightarrow$ 4 $R_X$ + 4 $H$.
+      \end{itemize}
   \end{columns}
 \end{frame}
 
@@ -483,8 +516,9 @@
 
 \begin{frame}{Optimiser comparison}
   \framesubtitle{Convergence behaviour on a representative instance}
-  \centering
-  \includegraphics[height=0.78\textheight]{../Implementation/figures/optimizer_comparison.png}
+  \vfill
+  \makebox[\linewidth][c]{\includegraphics[width=1.15\linewidth]{../Implementation/figures/optimizer_comparison.png}}
+  \vfill
 \end{frame}
 
 \begin{frame}{Warm start: initialise $p{+}1$ from the $p$-layer optimum}
@@ -519,32 +553,24 @@
 % ============================================================
 
 \begin{frame}{Problem instances}
-  \framesubtitle{Three 10-vertex graphs spanning low to medium edge density}
-  \centering
-  \includegraphics[width=0.95\linewidth]{../Implementation/exp_graphs.png}\\[4pt]
-  \begin{tabular}{lccc}
-    \toprule
-    Graph & $|E|$ & MaxCut & CX / layer \\
-    \midrule
-    $C_{10}$ (cycle)        & 10 & 10 & 20 \\
-    $C_{10}$ + 3 chords     & 13 & 13 & 26 \\
-    3-regular ($n=10$)      & 15 & 13 & 30 \\
-    \bottomrule
-  \end{tabular}
+  \framesubtitle{Three 10-vertex graphs --- $C_{10}$ has $\mathrm{MaxCut}=10$;\ \ $C_{10}$+3 chords and 3-regular both have $\mathrm{MaxCut}=13$}
+  \vfill
+  \makebox[\linewidth][c]{\includegraphics[width=1.15\linewidth]{../Implementation/exp_graphs.png}}
+  \vfill
 \end{frame}
 
 \begin{frame}{Performance comparison}
   \framesubtitle{QAOA $p=3$ ties or surpasses Greedy best-of-5; GW remains the gold standard}
-  \centering
-  \includegraphics[width=0.95\linewidth]{../Results/figures/algorithm_comparison.png}
+  \vfill
+  \makebox[\linewidth][c]{\includegraphics[width=1.15\linewidth]{../Results/figures/algorithm_comparison.png}}
+  \vfill
 \end{frame}
 
 \begin{frame}{Approximation ratio versus depth}
-  \framesubtitle{Monotone improvement, with diminishing returns past $p=3$}
-  \centering
-  \includegraphics[width=0.85\linewidth]{../Results/figures/qaoa_depth_comparison.png}\\[2pt]
-  {\footnotesize\itshape
-   For all three graphs, $p=3$ approaches the GW bound (0.8786).\par}
+  \framesubtitle{Monotone improvement, with diminishing returns past $p=3$. For all three graphs, $p=3$ approaches the GW bound (0.8786).}
+  \vfill
+  \makebox[\linewidth][c]{\includegraphics[width=1.15\linewidth]{../Results/figures/qaoa_depth_comparison.png}}
+  \vfill
 \end{frame}
 
 \begin{frame}{Measurement distributions}
@@ -568,62 +594,59 @@
   \end{columns}
 \end{frame}
 
-% --- 3-regular: best vs 2nd-best -----------------------------
+% --- 3-regular: best vs 2nd-best ------------------------------
 \begin{frame}{3-regular: not just one peak}
-  \framesubtitle{The next-best partition is also visible in the histogram}
+  \framesubtitle{Sampled distribution shows the 2nd-best cut as the next-tallest peak}
   \begin{columns}[T,onlytextwidth]
-    \column{0.5\textwidth}
+    \column{0.62\textwidth}
       \centering
-      \textbf{MaxCut $= 13$}\\[2pt]
-      \includegraphics[width=0.95\linewidth]{figs_from_pdf/3reg_best.png}\\[2pt]
-      {\footnotesize $\ket{1100110100},\;\ket{0011001011}$}
+      \includegraphics[width=\linewidth]{figs_from_pdf/3reg_hist.png}\\[2pt]
+      {\footnotesize\itshape 4096 shots; $p=1$ blue, $p=2$ orange,
+       $p=3$ green.}
 
-    \column{0.5\textwidth}
+    \column{0.36\textwidth}
       \centering
-      \textbf{2nd best: cut $= 12$}\\[2pt]
-      \includegraphics[width=0.95\linewidth]{figs_from_pdf/3reg_second_best.png}\\[2pt]
-      {\footnotesize $\ket{0101101101},\;\ket{1010010010}$}
+      \footnotesize\alert{cut $= 13$}\, (MaxCut)\\
+      \scriptsize $\ket{1100110100},\,\ket{0011001011}$\\[1pt]
+      \includegraphics[height=3.0cm]{figs_from_pdf/3reg_best.png}\\[6pt]
+      \footnotesize\alert{cut $= 12$}\, (2nd best)\\
+      \scriptsize $\ket{0101101101},\,\ket{1010010010}$\\[1pt]
+      \includegraphics[height=3.0cm]{figs_from_pdf/3reg_second_best.png}
   \end{columns}
-
-  \vspace{0.4em}
-  \footnotesize
-  Cut-12 partitions appear as the second-tallest peaks in the 3-regular
-  histogram --- QAOA concentrates amplitude on \emph{good} cuts, not
-  only the optimum.
 \end{frame}
 
 % ----------------- NOISE -----------------------------------
 \begin{frame}{Introducing noise}
-  \framesubtitle{One knob $\pcx$ that captures real-hardware behaviour}
+  \framesubtitle{2-qubit depolarising channel with error probability $\pcx$}
+  \begin{block}{After every CX gate}
+    \[
+      \mathcal{E}(\rho) \;=\; (1-\pcx)\,\rho
+        \;+\; \frac{\pcx}{15}
+              \!\!\sum_{P\in\{I,X,Y,Z\}^{\otimes 2}\setminus\{I^{\otimes 2}\}}\!\!
+              P\rho P^{\dagger}
+    \]
+  \end{block}
+
   \begin{itemize}
-    \item After every CX, apply a 2-qubit depolarising error with
-          probability $\pcx$.
-    \item Single-qubit gates ($H$, $R_X$, $R_Z$) get $\pcx/10$:
-          1Q fidelities on real hardware are typically $10\times$
-          better than 2Q.
+    \item Single-qubit gates ($H$, $R_X$, $R_Z$) carry the same form
+          with rate $\pcx/10$ (1Q fidelities are typically $10\times$
+          better than 2Q).
     \item Total CX count $= 2p|E|$, so circuit fidelity decays as
           $(1-\pcx)^{2p|E|}$ --- noise grows with depth and graph size.
+    \item We sweep $\pcx \in [0, 0.025]$.
   \end{itemize}
-
-  \vspace{0.4em}
-  \begin{block}{Sweep range}
-    $\pcx \in [0, 0.025]$. \,IBM/Google today: $\pcx \approx 0.5$--$1\%$.
-    \,Fault-tolerant target: $\pcx \to 0$.
-  \end{block}
 \end{frame}
 
 \begin{frame}{Ratio degradation with CX error rate}
-  \framesubtitle{Deeper circuits degrade faster — they have $3\times$ more CX gates}
-  \centering
-  \includegraphics[width=0.95\linewidth]{../Results/figures/noise_degradation.png}\\[2pt]
-  {\footnotesize\itshape
-   Each curve uses the noiseless-optimal $(\bm\gamma,\bm\beta)$ from depth $p$.\par}
+  \framesubtitle{Deeper circuits degrade faster --- they have $3\times$ more CX gates. Each curve uses the noiseless-optimal $(\bm\gamma,\bm\beta)$ from depth $p$.}
+  \vfill
+  \makebox[\linewidth][c]{\includegraphics[width=1.15\linewidth]{../Results/figures/noise_degradation.png}}
+  \vfill
 \end{frame}
 
 \begin{frame}{Crossover: when shallower beats deeper}
   \framesubtitle{Hardware noise dictates the optimal QAOA depth}
-  \centering
-  \includegraphics[width=0.95\linewidth]{../Results/figures/crossover_analysis.png}\\[3pt]
+  \makebox[\linewidth][c]{\includegraphics[width=1.12\linewidth]{../Results/figures/crossover_analysis.png}}\\[3pt]
 
   \begin{itemize}\small
     \item Total CX count $= 2p|E|$, so circuit fidelity decays as

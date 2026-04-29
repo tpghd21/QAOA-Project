@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2026.2.1)  28 APR 2026 14:30
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2026.2.1)  29 APR 2026 00:16
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1289,239 +1289,242 @@ Overfull \vbox (62.46996pt too high) detected at line 155
  <./figs_from_pdf/maxcut_problem.png (PNG copy)>] [5
 
 ]
-LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <10.95> not available
-(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 194.
+<figs_from_pdf/portfolio_setup.png, id=79, 1230.5975pt x 978.65625pt>
+File: figs_from_pdf/portfolio_setup.png Graphic file (type png)
+<use figs_from_pdf/portfolio_setup.png>
+Package pdftex.def Info: figs_from_pdf/portfolio_setup.png  used on input line 
+196.
+(pdftex.def)             Requested size: 199.1693pt x 158.38016pt.
 
-LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <8> not available
-(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 194.
-
-LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <6> not available
-(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 194.
-
-
-Overfull \vbox (24.11911pt too high) detected at line 194
+Overfull \vbox (9.35571pt too high) detected at line 196
  []
 
 [6
 
-{C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/cm-super/cm-supe
-r-t1.enc}]
-LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <9> not available
-(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 231.
-
-LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <5> not available
-(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 231.
-
-<figs_from_pdf/portfolio_setup.png, id=85, 1230.5975pt x 978.65625pt>
-File: figs_from_pdf/portfolio_setup.png Graphic file (type png)
-<use figs_from_pdf/portfolio_setup.png>
-Package pdftex.def Info: figs_from_pdf/portfolio_setup.png  used on input line 
-231.
-(pdftex.def)             Requested size: 199.1693pt x 158.38016pt.
-
-Overfull \vbox (9.35571pt too high) detected at line 231
- []
-
-[7
-
  <./figs_from_pdf/portfolio_setup.png (PNG copy)>]
-<figs_from_pdf/portfolio_solved.png, id=93, 1177.39874pt x 978.65625pt>
+<figs_from_pdf/portfolio_solved.png, id=86, 1177.39874pt x 978.65625pt>
 File: figs_from_pdf/portfolio_solved.png Graphic file (type png)
 <use figs_from_pdf/portfolio_solved.png>
 Package pdftex.def Info: figs_from_pdf/portfolio_solved.png  used on input line
- 270.
+ 235.
 (pdftex.def)             Requested size: 199.1693pt x 165.54803pt.
 LaTeX Font Info:    Trying to load font information for OMS+cmss on input line 
-270.
-LaTeX Font Info:    No file OMScmss.fd. on input line 270.
+235.
+LaTeX Font Info:    No file OMScmss.fd. on input line 235.
 
 
 LaTeX Font Warning: Font shape `OMS/cmss/m/n' undefined
 (Font)              using `OMS/cmsy/m/n' instead
-(Font)              for symbol `textbraceleft' on input line 270.
+(Font)              for symbol `textbraceleft' on input line 235.
+
+LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <9> not available
+(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 235.
+
+LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <6> not available
+(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 235.
+
+LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <5> not available
+(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 235.
 
 
-Overfull \hbox (23.3757pt too wide) in paragraph at lines 270--270
+Overfull \hbox (23.3757pt too wide) in paragraph at lines 235--235
 [][]  
  []
 
+LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <8> not available
+(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 235.
 
-Overfull \vbox (27.99197pt too high) detected at line 270
+
+Overfull \vbox (27.99197pt too high) detected at line 235
  []
 
-[8
+[7
 
- <./figs_from_pdf/portfolio_solved.png (PNG copy)>] [9
+ <./figs_from_pdf/portfolio_solved.png (PNG copy)>]
+LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <10.95> not available
+(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 238.
+
+ [8
 
 ]
-Overfull \vbox (18.97552pt too high) detected at line 311
+Overfull \vbox (18.97552pt too high) detected at line 276
+ []
+
+[9
+
+]
+<../Theory/figures/c4_maxcut.png, id=106, 787.0203pt x 281.853pt>
+File: ../Theory/figures/c4_maxcut.png Graphic file (type png)
+<use ../Theory/figures/c4_maxcut.png>
+Package pdftex.def Info: ../Theory/figures/c4_maxcut.png  used on input line 29
+1.
+(pdftex.def)             Requested size: 390.23074pt x 139.75204pt.
+
+Overfull \vbox (27.15062pt too high) detected at line 291
  []
 
 [10
 
-]
-<../Theory/figures/c4_maxcut.png, id=111, 787.0203pt x 281.853pt>
-File: ../Theory/figures/c4_maxcut.png Graphic file (type png)
-<use ../Theory/figures/c4_maxcut.png>
-Package pdftex.def Info: ../Theory/figures/c4_maxcut.png  used on input line 32
-6.
-(pdftex.def)             Requested size: 338.59023pt x 121.25893pt.
-
-Overfull \vbox (8.6575pt too high) detected at line 326
- []
-
-[11
-
  <../Theory/figures/c4_maxcut.png>]
 LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <12> not available
-(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 356.
+(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 321.
 
- [12
+ [11
 
-] [13
+] [12
 
 ]
-<figs_from_pdf/gw_bars.png, id=132, 1110.1475pt x 948.54375pt>
+<figs_from_pdf/gw_bars.png, id=126, 1110.1475pt x 948.54375pt>
 File: figs_from_pdf/gw_bars.png Graphic file (type png)
 <use figs_from_pdf/gw_bars.png>
-Package pdftex.def Info: figs_from_pdf/gw_bars.png  used on input line 420.
+Package pdftex.def Info: figs_from_pdf/gw_bars.png  used on input line 385.
 (pdftex.def)             Requested size: 207.13776pt x 176.9831pt.
- [14
+ [13
 
- <./figs_from_pdf/gw_bars.png (PNG copy)>] [15
+ <./figs_from_pdf/gw_bars.png (PNG copy)>] [14
 
 ]
-Overfull \hbox (25.83192pt too wide) in paragraph at lines 459--459
+Overfull \hbox (25.83192pt too wide) in paragraph at lines 420--420
 [][]  
  []
 
-[16
-
-] [17
+[15
 
 ]
-<../Implementation/figures/optimizer_comparison.png, id=156, 932.283pt x 354.12
+<figs_from_pdf/c4_qaoa_circuit.png, id=146, 825.68475pt x 218.9781pt>
+File: figs_from_pdf/c4_qaoa_circuit.png Graphic file (type png)
+<use figs_from_pdf/c4_qaoa_circuit.png>
+Package pdftex.def Info: figs_from_pdf/c4_qaoa_circuit.png  used on input line 
+454.
+(pdftex.def)             Requested size: 302.73514pt x 80.28886pt.
+ [16
+
+ <./figs_from_pdf/c4_qaoa_circuit.png>] [17
+
+] [18
+
+]
+<../Implementation/figures/optimizer_comparison.png, id=167, 932.283pt x 354.12
 3pt>
 File: ../Implementation/figures/optimizer_comparison.png Graphic file (type png
 )
 <use ../Implementation/figures/optimizer_comparison.png>
 Package pdftex.def Info: ../Implementation/figures/optimizer_comparison.png  us
-ed on input line 488.
-(pdftex.def)             Requested size: 462.88272pt x 175.81808pt.
-
-Overfull \hbox (64.54413pt too wide) in paragraph at lines 488--488
- [][] 
- []
-
-[18
+ed on input line 522.
+(pdftex.def)             Requested size: 458.08694pt x 174.00269pt.
+ [19
 
  <../Implementation/figures/optimizer_comparison.png>]
 LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <10> not available
-(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 515.
+(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 549.
 
 LaTeX Font Info:    Font shape `OT1/cmss/b/n' in size <7> not available
-(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 515.
+(Font)              Font shape `OT1/cmss/bx/n' tried instead on input line 549.
 
-<../Implementation/figures/warmstart_comparison.png, id=163, 642.4803pt x 354.1
+<../Implementation/figures/warmstart_comparison.png, id=175, 642.4803pt x 354.1
 23pt>
 File: ../Implementation/figures/warmstart_comparison.png Graphic file (type png
 )
 <use ../Implementation/figures/warmstart_comparison.png>
 Package pdftex.def Info: ../Implementation/figures/warmstart_comparison.png  us
-ed on input line 515.
+ed on input line 549.
 (pdftex.def)             Requested size: 219.08743pt x 120.75685pt.
- [19
+ [20
 
- <../Implementation/figures/warmstart_comparison.png>] [20
+ <../Implementation/figures/warmstart_comparison.png>] [21
 
 ]
-<../Implementation/exp_graphs.png, id=180, 1004.553pt x 321.87946pt>
+<../Implementation/exp_graphs.png, id=190, 1004.553pt x 321.87946pt>
 File: ../Implementation/exp_graphs.png Graphic file (type png)
 <use ../Implementation/exp_graphs.png>
 Package pdftex.def Info: ../Implementation/exp_graphs.png  used on input line 5
-34.
-(pdftex.def)             Requested size: 378.42044pt x 121.25458pt.
-
-Overfull \vbox (9.80948pt too high) detected at line 534
- []
-
-[21
+60.
+(pdftex.def)             Requested size: 458.08694pt x 146.77953pt.
+ [22
 
  <../Implementation/exp_graphs.png>]
-<../Results/figures/algorithm_comparison.png, id=187, 1076.1003pt x 393.1488pt>
+<../Results/figures/algorithm_comparison.png, id=197, 1076.1003pt x 393.1488pt>
 
 File: ../Results/figures/algorithm_comparison.png Graphic file (type png)
 <use ../Results/figures/algorithm_comparison.png>
 Package pdftex.def Info: ../Results/figures/algorithm_comparison.png  used on i
-nput line 540.
-(pdftex.def)             Requested size: 378.42044pt x 138.25203pt.
- [22
+nput line 567.
+(pdftex.def)             Requested size: 458.08694pt x 167.35898pt.
+ [23
 
  <../Results/figures/algorithm_comparison.png>]
-<../Results/figures/qaoa_depth_comparison.png, id=194, 1003.8303pt x 322.3242pt
+<../Results/figures/qaoa_depth_comparison.png, id=204, 1003.8303pt x 322.3242pt
 >
 File: ../Results/figures/qaoa_depth_comparison.png Graphic file (type png)
 <use ../Results/figures/qaoa_depth_comparison.png>
 Package pdftex.def Info: ../Results/figures/qaoa_depth_comparison.png  used on 
-input line 548.
-(pdftex.def)             Requested size: 338.59023pt x 108.71823pt.
- [23
+input line 574.
+(pdftex.def)             Requested size: 458.08694pt x 147.09055pt.
+ [24
 
  <../Results/figures/qaoa_depth_comparison.png>]
-<../Results/figures/graph_instances.png, id=201, 1003.8303pt x 322.3242pt>
+<../Results/figures/graph_instances.png, id=211, 1003.8303pt x 322.3242pt>
 File: ../Results/figures/graph_instances.png Graphic file (type png)
 <use ../Results/figures/graph_instances.png>
 Package pdftex.def Info: ../Results/figures/graph_instances.png  used on input 
-line 569.
+line 595.
 (pdftex.def)             Requested size: 278.83578pt x 89.53209pt.
- [24
+ [25
 
  <../Results/figures/graph_instances.png>]
-<figs_from_pdf/3reg_best.png, id=209, 829.0975pt x 572.1375pt>
+<figs_from_pdf/3reg_hist.png, id=220, 1660.2025pt x 1129.21875pt>
+File: figs_from_pdf/3reg_hist.png Graphic file (type png)
+<use figs_from_pdf/3reg_hist.png>
+Package pdftex.def Info: figs_from_pdf/3reg_hist.png  used on input line 616.
+(pdftex.def)             Requested size: 246.96797pt x 167.97983pt.
+<figs_from_pdf/3reg_best.png, id=221, 829.0975pt x 572.1375pt>
 File: figs_from_pdf/3reg_best.png Graphic file (type png)
 <use figs_from_pdf/3reg_best.png>
-Package pdftex.def Info: figs_from_pdf/3reg_best.png  used on input line 593.
-(pdftex.def)             Requested size: 189.21022pt x 130.56743pt.
-<figs_from_pdf/3reg_second_best.png, id=210, 829.0975pt x 572.1375pt>
+Package pdftex.def Info: figs_from_pdf/3reg_best.png  used on input line 616.
+(pdftex.def)             Requested size: 123.68875pt x 85.35826pt.
+<figs_from_pdf/3reg_second_best.png, id=222, 829.0975pt x 572.1375pt>
 File: figs_from_pdf/3reg_second_best.png Graphic file (type png)
 <use figs_from_pdf/3reg_second_best.png>
 Package pdftex.def Info: figs_from_pdf/3reg_second_best.png  used on input line
- 593.
-(pdftex.def)             Requested size: 189.21022pt x 130.56743pt.
+ 616.
+(pdftex.def)             Requested size: 123.68875pt x 85.35826pt.
 
-Overfull \vbox (5.34056pt too high) detected at line 593
+Overfull \vbox (38.74051pt too high) detected at line 616
  []
 
-[25
+[26
 
- <./figs_from_pdf/3reg_best.png (PNG copy)> <./figs_from_pdf/3reg_second_best.p
-ng (PNG copy)>] [26
+ <./figs_from_pdf/3reg_hist.png (PNG copy)> <./figs_from_pdf/3reg_best.png (PNG
+ copy)> <./figs_from_pdf/3reg_second_best.png (PNG copy)>] [27
 
 ]
-<../Results/figures/noise_degradation.png, id=222, 1076.1003pt x 357.7365pt>
+<../Results/figures/noise_degradation.png, id=233, 1076.1003pt x 357.7365pt>
 File: ../Results/figures/noise_degradation.png Graphic file (type png)
 <use ../Results/figures/noise_degradation.png>
 Package pdftex.def Info: ../Results/figures/noise_degradation.png  used on inpu
-t line 621.
-(pdftex.def)             Requested size: 378.42044pt x 125.79916pt.
- [27
+t line 645.
+(pdftex.def)             Requested size: 458.08694pt x 152.28436pt.
+ [28
 
  <../Results/figures/noise_degradation.png>]
-<../Results/figures/crossover_analysis.png, id=230, 1076.1003pt x 322.3242pt>
+<../Results/figures/crossover_analysis.png, id=240, 1076.1003pt x 322.3242pt>
 File: ../Results/figures/crossover_analysis.png Graphic file (type png)
 <use ../Results/figures/crossover_analysis.png>
 Package pdftex.def Info: ../Results/figures/crossover_analysis.png  used on inp
-ut line 636.
-(pdftex.def)             Requested size: 378.42044pt x 113.34633pt.
+ut line 659.
+(pdftex.def)             Requested size: 446.13727pt x 133.62926pt.
 
-[28
+Overfull \vbox (3.24931pt too high) detected at line 659
+ []
 
- <../Results/figures/crossover_analysis.png>] [29
+[29
 
-] [30
-
+ <../Results/figures/crossover_analysis.png>] [30
 
 ] [31
+
+
+] [32
 
 ]
 \tf@nav=\write6
@@ -1547,49 +1550,50 @@ Package rerunfilecheck Info: File `qaoa_presentation.out' has not changed.
 (rerunfilecheck)             Checksum: 1951D89CD30D30DB3F1930DE15462855;460.
  ) 
 Here is how much of TeX's memory you used:
- 28300 strings out of 474486
- 597712 string characters out of 5743284
+ 28317 strings out of 474486
+ 598160 string characters out of 5743284
  1938542 words of memory out of 5000000
- 49885 multiletter control sequences out of 15000+600000
- 593701 words of font info for 144 fonts, out of 8000000 for 9000
+ 49901 multiletter control sequences out of 15000+600000
+ 593238 words of font info for 144 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  128i,13n,123p,1886b,1078s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm
 /cmex10.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/a
-msfonts/cm/cmmi10.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type
-1/public/amsfonts/cm/cmmi6.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/f
-onts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Users/Sehong/AppData/Local/Programs
-/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Users/Sehong/AppData/Local
-/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi9.pfb><C:/Users/Sehong/AppD
-ata/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmib10.pfb><C:/Users/
-Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cmextra/cmmib8
-.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts
-/cmextra/cmmib9.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/
-public/amsfonts/cm/cmr9.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/font
-s/type1/public/amsfonts/cm/cmss10.pfb><C:/Users/Sehong/AppData/Local/Programs/M
-iKTeX/fonts/type1/public/amsfonts/cm/cmss12.pfb><C:/Users/Sehong/AppData/Local/
-Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmss8.pfb><C:/Users/Sehong/AppDa
-ta/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmss9.pfb><C:/Users/Seh
-ong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmssbx10.pfb><
-C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cm
-ssi10.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/ams
-fonts/cm/cmssi12.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1
-/public/amsfonts/cm/cmssi8.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/f
-onts/type1/public/amsfonts/cm/cmssi9.pfb><C:/Users/Sehong/AppData/Local/Program
-s/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/Sehong/AppData/Loc
-al/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy7.pfb><C:/Users/Sehong/Ap
-pData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy8.pfb><C:/Users/
-Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy9.pfb><
-C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/symbo
-ls/msbm10.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public
-/cm-super/sfso1000.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/typ
-e1/public/cm-super/sfss0800.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/
-fonts/type1/public/cm-super/sfss0900.pfb><C:/Users/Sehong/AppData/Local/Program
-s/MiKTeX/fonts/type1/public/cm-super/sfss1000.pfb><C:/Users/Sehong/AppData/Loca
-l/Programs/MiKTeX/fonts/type1/public/cm-super/sfss1095.pfb>
-Output written on qaoa_presentation.pdf (31 pages, 1419903 bytes).
+msfonts/cmextra/cmex8.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/
+type1/public/amsfonts/cm/cmmi10.pfb><C:/Users/Sehong/AppData/Local/Programs/MiK
+TeX/fonts/type1/public/amsfonts/cm/cmmi6.pfb><C:/Users/Sehong/AppData/Local/Pro
+grams/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Users/Sehong/AppData/
+Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Users/Sehong
+/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi9.pfb><C:/Use
+rs/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmib10.
+pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/
+cmextra/cmmib8.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/p
+ublic/amsfonts/cm/cmr10.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/font
+s/type1/public/amsfonts/cm/cmr9.pfb><C:/Users/Sehong/AppData/Local/Programs/MiK
+TeX/fonts/type1/public/amsfonts/cm/cmss10.pfb><C:/Users/Sehong/AppData/Local/Pr
+ograms/MiKTeX/fonts/type1/public/amsfonts/cm/cmss12.pfb><C:/Users/Sehong/AppDat
+a/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmss8.pfb><C:/Users/Seho
+ng/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmss9.pfb><C:/U
+sers/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmssbx
+10.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfon
+ts/cm/cmssi10.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/pu
+blic/amsfonts/cm/cmssi12.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fon
+ts/type1/public/amsfonts/cm/cmssi8.pfb><C:/Users/Sehong/AppData/Local/Programs/
+MiKTeX/fonts/type1/public/amsfonts/cm/cmssi9.pfb><C:/Users/Sehong/AppData/Local
+/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/Sehong/App
+Data/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy6.pfb><C:/Users/S
+ehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy7.pfb><C
+:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cms
+y8.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfon
+ts/cm/cmsy9.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/fonts/type1/publ
+ic/amsfonts/symbols/msbm10.pfb><C:/Users/Sehong/AppData/Local/Programs/MiKTeX/f
+onts/type1/public/cm-super/sfss0800.pfb><C:/Users/Sehong/AppData/Local/Programs
+/MiKTeX/fonts/type1/public/cm-super/sfss0900.pfb><C:/Users/Sehong/AppData/Local
+/Programs/MiKTeX/fonts/type1/public/cm-super/sfss1000.pfb><C:/Users/Sehong/AppD
+ata/Local/Programs/MiKTeX/fonts/type1/public/cm-super/sfss1095.pfb>
+Output written on qaoa_presentation.pdf (32 pages, 1673533 bytes).
 PDF statistics:
- 395 PDF objects out of 1000 (max. 8388607)
- 68 named destinations out of 1000 (max. 500000)
- 158 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 410 PDF objects out of 1000 (max. 8388607)
+ 70 named destinations out of 1000 (max. 500000)
+ 168 words of extra memory for PDF output out of 10000 (max. 10000000)
 
